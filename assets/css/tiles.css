@@ -428,7 +428,60 @@
   text-decoration: none;
 }
 
+.contact-action-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(0, 0, 0, 0.55);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.contact-action-modal-content {
+  width: min(92vw, 460px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.contact-action-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.contact-action-logo {
+  max-width: 76px;
+  max-height: 76px;
+  margin-bottom: 12px;
+}
+
+.contact-action-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
 @media (max-width: 768px) {
+  .info-tile:hover,
+  .boiler-tile:hover,
+  .fault-tile:hover,
+  .link-big-tile:hover {
+    transform: none;
+  }
+
    .info-tile {
     max-width: 180px;
     width: 100%;

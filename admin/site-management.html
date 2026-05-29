@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarmHub - Site Management | Warm Right Ltd</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.adminPageTitle = "WarmHub - Site Management";</script>
+  <script src="../assets/js/admin-include.js"></script>
+  <style>
+    :root {
+      --primary-blue: #004a99;
+      --accent-orange: #ff8c00;
+      --light-gray: #f4f7f6;
+      --text-dark: #333;
+      --muted: #667085;
+      --border: #e5e7eb;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: var(--light-gray);
+      color: var(--text-dark);
+      padding: 40px;
+      visibility: hidden;
+    }
+
+    #admin-header-container { margin: -40px -40px 30px -40px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .panel { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 24px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    h2, h3 { margin: 0; color: var(--primary-blue); }
+    p.hint { color: var(--muted); margin: 8px 0 0; font-size: 14px; }
+    button { padding: 10px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-blue); color: #fff; }
+    .btn-accent { background: var(--accent-orange); color: #fff; }
+    .btn-outline { background: #fff; color: var(--primary-blue); border: 1px solid var(--border); }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .status { min-height: 20px; color: var(--muted); font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th { text-align: left; color: var(--primary-blue); background: #f9fafb; border-bottom: 2px solid var(--border); padding: 12px; font-size: 13px; }
+    td { border-bottom: 1px solid var(--border); padding: 12px; vertical-align: top; }
+    input, textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 10px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 74px; }
+    .toggle-row { display: flex; align-items: center; gap: 8px; }
+    .toggle-row input { width: auto; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .form-grid .wide { grid-column: 1 / -1; }
+    .char-note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .preview-img { width: 80px; height: 54px; object-fit: cover; border-radius: 6px; background: #f3f4f6; }
+    .hidden { display: none !important; }
+    .drag-handle {
+      width: 38px;
+      color: var(--muted);
+      cursor: grab;
+      font-size: 20px;
+      text-align: center;
+      user-select: none;
+    }
+    tr.dragging {
+      opacity: 0.45;
+    }
+    tr.drag-over {
+      outline: 2px solid var(--accent-orange);
+      outline-offset: -2px;
+    }
+    .group-row th {
+      background: #eef6ff;
+      color: var(--primary-blue);
+      border-top: 2px solid #bfdbfe;
+      border-bottom: 1px solid #bfdbfe;
+      font-size: 14px;
+      letter-spacing: 0;
+      padding: 14px 12px;
+    }
+    .group-pill {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      padding: 4px 10px;
+      margin-left: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    @media (max-width: 768px) {
+      body { padding: 75px 14px 20px !important; }
+      #admin-header-container { margin: 0 -14px 20px -14px !important; }
+      .form-grid { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+
+  <main class="container">
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Visible Pages</h2>
+          <p class="hint">Switch pages off to remove them from both desktop and mobile navigation.</p>
+        </div>
+        <button class="btn-accent" onclick="seedPages()">Seed Current Pages</button>
+      </div>
+      <div class="status" id="page-status"></div>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Visible</th>
+            <th>Page</th>
+            <th>URL</th>
+            <th>Nav Group</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pages-body"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Carousel Tiles</h2>
+          <p class="hint">Choose a carousel, then add, edit, deactivate, or delete tiles.</p>
+        </div>
+        <div class="toolbar-left">
+          <select id="carousel-filter" onchange="renderTiles()">
+            <option value="take-a-look">Take a look around</option>
+            <option value="support">Support</option>
+          </select>
+          <button class="btn-accent" onclick="seedTiles()">Seed Current Tiles</button>
+        </div>
+      </div>
+      <div class="status" id="tile-status"></div>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Visible</th>
+            <th>Image</th>
+            <th>Tile</th>
+            <th>Description</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tiles-body"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2 id="tile-form-title">Add Carousel Tile</h2>
+          <p class="hint">Description limit is labelled here for later adjustment: 150 characters.</p>
+        </div>
+        <button class="btn-outline" onclick="resetTileForm()">Clear Form</button>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Carousel
+          <select id="tile-carousel">
+            <option value="take-a-look">Take a look around</option>
+            <option value="support">Support</option>
+          </select>
+        </label>
+        <label class="hidden">
+          Sort Order
+          <input id="tile-order" type="number" value="0">
+        </label>
+        <label>
+          Tile Name
+          <input id="tile-title" maxlength="80" placeholder="e.g. Boiler Installations">
+        </label>
+        <label>
+          Link URL
+          <input id="tile-link" placeholder="/services/boiler-installation.html">
+        </label>
+        <label class="wide">
+          Image URL
+          <input id="tile-image" placeholder="assets/images/boiler-installation.jpg">
+        </label>
+        <label class="wide">
+          Description
+          <textarea id="tile-description" maxlength="150" oninput="updateCharCount()" placeholder="Short tile description"></textarea>
+          <div class="char-note"><span id="desc-count">0</span>/150 characters. Change maxlength in this file when you decide the final limit.</div>
+        </label>
+        <label class="toggle-row">
+          <input id="tile-active" type="checkbox" checked>
+          Visible on site
+        </label>
+      </div>
+      <div style="margin-top: 16px;">
+        <button class="btn-primary" onclick="saveTile()">Save Tile</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+
+    const DEFAULT_PAGES = [
+      { page_key: 'home', title: 'Home', url: '/index.html', nav_group: 'main', sort_order: 10, is_active: true },
+      { page_key: 'about', title: 'About Us', url: '/about.html', nav_group: 'main', sort_order: 20, is_active: true },
+      { page_key: 'breakdowns', title: 'Breakdowns', url: '/services/breakdowns.html', nav_group: 'services', sort_order: 30, is_active: true },
+      { page_key: 'repairs', title: 'Repairs', url: '/services/repairs.html', nav_group: 'services', sort_order: 40, is_active: true },
+      { page_key: 'annual-servicing', title: 'Annual Servicing', url: '/services/annual-servicing.html', nav_group: 'services', sort_order: 50, is_active: true },
+      { page_key: 'landlords-certificates', title: "Landlord's Certificates (CP12)", url: '/services/landlords-certificates.html', nav_group: 'services', sort_order: 60, is_active: true },
+      { page_key: 'boiler-installation', title: 'Boiler Installations', url: '/services/boiler-installation.html', nav_group: 'services', sort_order: 70, is_active: true },
+      { page_key: 'general-maintenance', title: 'Plumbing', url: '/services/general-maintenance.html', nav_group: 'services', sort_order: 80, is_active: true },
+      { page_key: 'homebuyers-reports', title: "Homebuyer's Reports", url: '/services/homebuyers-reports.html', nav_group: 'services', sort_order: 90, is_active: true },
+      { page_key: 'kitchens-bathrooms', title: 'Kitchens & Bathrooms', url: '/services/kitchens-bathrooms.html', nav_group: 'services', sort_order: 100, is_active: true },
+      { page_key: 'powerflushing-descaling', title: 'Powerflushing and Descaling', url: '/services/powerflushing-descaling.html', nav_group: 'services', sort_order: 110, is_active: true },
+      { page_key: 'second-opinion', title: 'Second Opinions', url: '/services/second-opinion.html', nav_group: 'services', sort_order: 120, is_active: true },
+      { page_key: 'unvented-cylinders', title: 'Unvented Cylinders', url: '/services/unvented-cylinders.html', nav_group: 'services', sort_order: 130, is_active: true },
+      { page_key: 'common-faults', title: 'Common Faults', url: '/support/common-faults.html', nav_group: 'support', sort_order: 140, is_active: true },
+      { page_key: 'manuals', title: 'Boiler Manuals', url: '/support/manuals.html', nav_group: 'support', sort_order: 150, is_active: true },
+      { page_key: 'energy-efficiency', title: 'Energy Efficiency', url: '/support/energy-efficiency.html', nav_group: 'support', sort_order: 160, is_active: true },
+      { page_key: 'engineers', title: "Engineer's Support", url: '/support/engineers.html', nav_group: 'support', sort_order: 170, is_active: true },
+      { page_key: 'rates', title: 'Our Rates', url: '/schedule-of-rates.html', nav_group: 'main', sort_order: 180, is_active: true },
+      { page_key: 'offers', title: 'Offers', url: '/offers.html', nav_group: 'main', sort_order: 190, is_active: true },
+      { page_key: 'testimonials', title: 'Testimonials', url: '/testimonals.html', nav_group: 'main', sort_order: 200, is_active: true },
+      { page_key: 'book-a-visit', title: 'Book A Visit', url: '/book-a-visit.html', nav_group: 'main', sort_order: 210, is_active: true },
+      { page_key: 'contact', title: 'Contact Us', url: '/contact.html', nav_group: 'main', sort_order: 220, is_active: true }
+    ];
+
+    const DEFAULT_TILES = [
+      { carousel_key: 'take-a-look', tile_key: 'breakdowns', title: 'Breakdowns', description: 'Expert repairs for boilers, plumbing, and heating systems of all types.', image_url: 'assets/images/breakdowns.jpg', link_url: '/services/breakdowns.html', sort_order: 10, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'common-faults', title: 'Common Faults', description: 'Guides to help you identify and resolve common heating issues.', image_url: 'assets/images/common-faults.jpg', link_url: '/support/common-faults.html', sort_order: 20, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'contact', title: 'Contact Us', description: "Get in touch easily - we're here to help with any enquiry.", image_url: 'assets/images/contact.jpg', link_url: '/contact.html', sort_order: 30, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'book', title: 'Book A Visit', description: 'Arrange a convenient appointment with our expert team today.', image_url: 'assets/images/book.png', link_url: '/book-a-visit.html', sort_order: 40, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'engineers', title: "Engineer's Support", description: 'Technical support and resources for engineers in the field.', image_url: 'assets/images/engineers.jpg', link_url: '/support/engineers.html', sort_order: 50, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'offers', title: 'Offers', description: 'Check out our latest deals and seasonal promotions.', image_url: 'assets/images/offers.png', link_url: '/offers.html', sort_order: 60, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'boiler-installations', title: 'Boiler Installations', description: 'Efficient, reliable boiler installations tailored to your property.', image_url: 'assets/images/boiler-installation.jpg', link_url: '/services/boiler-installation.html', sort_order: 70, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'kitchens-bathrooms', title: 'Kitchens & Bathrooms', description: 'Design and installation services for stylish, functional spaces.', image_url: 'assets/images/kitchen-bathrooms.jpg', link_url: '/services/kitchens-bathrooms.html', sort_order: 80, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'unvented-cylinders', title: 'Unvented Cylinders', description: 'Installation and servicing of unvented hot water cylinders for reliable supply.', image_url: 'assets/images/unvented-cylinders.jpg', link_url: '/services/unvented-cylinders.html', sort_order: 90, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'annual-servicing', title: 'Annual Servicing', description: 'Keep your system safe and efficient with regular annual servicing.', image_url: 'assets/images/annual-servicing.jpg', link_url: '/services/annual-servicing.html', sort_order: 100, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'second-opinion', title: 'Second Opinions', description: "Independent advice and reports if you're unsure about another company's work.", image_url: 'assets/images/second-opinion.jpg', link_url: '/services/second-opinion.html', sort_order: 110, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'landlord-certificates', title: "Landlord's Certificates (CP12)", description: 'Professional safety checks and certificates with full tenant support.', image_url: 'assets/images/landlord-cp12.jpg', link_url: '/services/landlords-certificates.html', sort_order: 120, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'energy-efficiency', title: 'Energy Efficiency', description: 'Tips and services to reduce energy use and lower your bills.', image_url: 'assets/images/energy-efficiency.jpg', link_url: '/support/energy-efficiency.html', sort_order: 130, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'homebuyers-reports', title: "Homebuyer's Reports", description: 'Detailed inspections and reports to give you peace of mind when buying.', image_url: 'assets/images/homebuyers-report.jpg', link_url: '/services/homebuyers-reports.html', sort_order: 140, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'testimonials', title: 'Customer Testimonials', description: 'See what our happy customers have to say about our services.', image_url: 'assets/images/testimonials.jpg', link_url: '/testimonals.html', sort_order: 150, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'plumbing', title: 'Plumbing', description: 'From leaks to full bathroom installs, our plumbing team has you covered.', image_url: 'assets/images/plumbing.jpg', link_url: '/services/general-maintenance.html', sort_order: 160, is_active: true },
+      { carousel_key: 'take-a-look', tile_key: 'powerflushing', title: 'Powerflushing & Descaling', description: 'Improve efficiency and extend system life with deep cleaning services.', image_url: 'assets/images/powerflushing.jpg', link_url: '/services/powerflushing-descaling.html', sort_order: 170, is_active: true },
+      { carousel_key: 'support', tile_key: 'common-faults', title: 'Common Faults', description: 'Check our easy to follow troubleshooting. It could prevent a callout.', image_url: 'assets/images/common-faults.jpg', link_url: '/support/common-faults.html', sort_order: 10, is_active: true },
+      { carousel_key: 'support', tile_key: 'fault-code-finder', title: 'Fault Code Finder', description: 'Not sure what that error message means? Use our Fault Code Finder.', image_url: 'assets/images/fault-code-mobile.png', link_url: '/support/boiler-fault-codes.html', sort_order: 20, is_active: true },
+      { carousel_key: 'support', tile_key: 'second-opinion', title: 'Second Opinions', description: "Independent advice and reports if you're unsure about another company's work.", image_url: 'assets/images/second-opinion.jpg', link_url: '/services/second-opinion.html', sort_order: 30, is_active: true },
+      { carousel_key: 'support', tile_key: 'engineers', title: 'Are you an engineer?', description: 'We do not do competition. We are here to support each other.', image_url: 'assets/images/engineers.jpg', link_url: '/support/engineers.html', sort_order: 40, is_active: true },
+      { carousel_key: 'support', tile_key: 'powerflush-advice', title: 'Had advice to get a powerflush?', description: 'Learn more here', image_url: 'assets/images/powerflushing.jpg', link_url: '/services/powerflushing-descaling.html', sort_order: 50, is_active: true }
+    ];
+
+    let pages = [];
+    let tiles = [];
+    let editingTileId = null;
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib) { setTimeout(checkSecurity, 50); return; }
+
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      await window.loadAdminHeader(session);
+      document.body.style.visibility = 'visible';
+      await loadData();
+    }
+
+    async function loadData() {
+      const [pageResult, tileResult] = await Promise.all([
+        window.db.from('site_pages').select('*').order('sort_order'),
+        window.db.from('site_carousel_tiles').select('*').order('sort_order')
+      ]);
+
+      if (pageResult.error || tileResult.error) {
+        setStatus('page-status', 'Run supabase-site-management.sql in Supabase first, then reload this page.');
+        setStatus('tile-status', 'Database tables are not ready yet.');
+        console.error(pageResult.error || tileResult.error);
+        return;
+      }
+
+      pages = pageResult.data || [];
+      tiles = tileResult.data || [];
+      renderPages();
+      renderTiles();
+    }
+
+    function setStatus(id, message) {
+      document.getElementById(id).textContent = message || '';
+    }
+
+    async function seedPages() {
+      const { error } = await window.db.from('site_pages').upsert(DEFAULT_PAGES, { onConflict: 'page_key' });
+      if (error) return alert(error.message);
+      setStatus('page-status', 'Current pages saved to database.');
+      await loadData();
+    }
+
+    async function seedTiles() {
+      const { error } = await window.db.from('site_carousel_tiles').upsert(DEFAULT_TILES, { onConflict: 'carousel_key,tile_key' });
+      if (error) return alert(error.message);
+      setStatus('tile-status', 'Current carousel tiles saved to database.');
+      await loadData();
+    }
+
+    function renderPages() {
+      const tbody = document.getElementById('pages-body');
+      const groups = [
+        { key: 'main', label: 'Main Navigation' },
+        { key: 'services', label: 'Services Menu' },
+        { key: 'support', label: 'Support Menu' }
+      ];
+
+      tbody.innerHTML = groups.map(group => {
+        const groupPages = pages
+          .filter(page => page.nav_group === group.key)
+          .sort((a, b) => a.sort_order - b.sort_order);
+
+        if (groupPages.length === 0) return '';
+
+        return `
+          <tr class="group-row" data-group="${group.key}">
+            <th colspan="6">${group.label}<span class="group-pill">${groupPages.length} page${groupPages.length === 1 ? '' : 's'}</span></th>
+          </tr>
+          ${groupPages.map(page => `
+        <tr draggable="true" data-page-id="${page.id}" data-nav-group="${page.nav_group}" ondragstart="startPageDrag(event)" ondragover="dragPageOver(event)" ondragleave="clearPageDrag(event)" ondrop="dropPage(event)" ondragend="endPageDrag()">
+          <td class="drag-handle" title="Drag to reorder">☰</td>
+          <td><input type="checkbox" ${page.is_active ? 'checked' : ''} onchange="togglePage('${page.id}', this.checked)"></td>
+          <td><strong>${escapeHtml(page.title)}</strong></td>
+          <td>${escapeHtml(page.url)}</td>
+          <td>${escapeHtml(page.nav_group)}</td>
+          <td><button class="btn-outline" onclick="togglePage('${page.id}', ${!page.is_active})">${page.is_active ? 'Deactivate' : 'Reinstate'}</button></td>
+        </tr>
+      `).join('')}
+        `;
+      }).join('');
+    }
+
+    function renderTiles() {
+      const key = document.getElementById('carousel-filter').value;
+      const tbody = document.getElementById('tiles-body');
+      const filtered = tiles.filter(tile => tile.carousel_key === key).sort((a, b) => a.sort_order - b.sort_order);
+      tbody.innerHTML = filtered.map(tile => `
+        <tr draggable="true" data-tile-id="${tile.id}" ondragstart="startTileDrag(event)" ondragover="dragTileOver(event)" ondragleave="clearTileDrag(event)" ondrop="dropTile(event)" ondragend="endTileDrag()">
+          <td class="drag-handle" title="Drag to reorder">☰</td>
+          <td><input type="checkbox" ${tile.is_active ? 'checked' : ''} onchange="toggleTile('${tile.id}', this.checked)"></td>
+          <td><img class="preview-img" src="../${escapeAttr(tile.image_url)}" alt=""></td>
+          <td><strong>${escapeHtml(tile.title)}</strong><br><small>${escapeHtml(tile.link_url)}</small></td>
+          <td>${escapeHtml(tile.description)}</td>
+          <td>
+            <button class="btn-outline" onclick="editTile('${tile.id}')">Edit</button>
+            <button class="btn-danger" onclick="deleteTile('${tile.id}')">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function togglePage(id, isActive) {
+      const { error } = await window.db.from('site_pages').update({ is_active: isActive, updated_at: new Date().toISOString() }).eq('id', id);
+      if (error) return alert(error.message);
+      await loadData();
+    }
+
+    let draggedPageId = null;
+    let draggedPageGroup = null;
+
+    function startPageDrag(event) {
+      draggedPageId = event.currentTarget.dataset.pageId;
+      draggedPageGroup = event.currentTarget.dataset.navGroup;
+      event.currentTarget.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedPageId);
+    }
+
+    function dragPageOver(event) {
+      event.preventDefault();
+      const row = event.currentTarget;
+      if (row.dataset.pageId === draggedPageId) return;
+      if (row.dataset.navGroup !== draggedPageGroup) {
+        event.dataTransfer.dropEffect = 'none';
+        return;
+      }
+      row.classList.add('drag-over');
+
+      const tbody = document.getElementById('pages-body');
+      const draggingRow = tbody.querySelector(`tr[data-page-id="${draggedPageId}"]`);
+      const rect = row.getBoundingClientRect();
+      const shouldPlaceAfter = event.clientY > rect.top + rect.height / 2;
+      tbody.insertBefore(draggingRow, shouldPlaceAfter ? row.nextSibling : row);
+    }
+
+    function clearPageDrag(event) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+
+    async function dropPage(event) {
+      event.preventDefault();
+      clearPageDrag(event);
+      await savePageOrder();
+    }
+
+    function endPageDrag() {
+      document.querySelectorAll('#pages-body tr').forEach(row => {
+        row.classList.remove('dragging', 'drag-over');
+      });
+      draggedPageId = null;
+      draggedPageGroup = null;
+    }
+
+    async function savePageOrder() {
+      const rows = [...document.querySelectorAll(`#pages-body tr[data-nav-group="${draggedPageGroup}"]`)];
+      const now = new Date().toISOString();
+      const updates = rows.map((row, index) => {
+        const id = row.dataset.pageId;
+        const sortOrder = (index + 1) * 10;
+        const page = pages.find(item => item.id === id);
+        if (page) page.sort_order = sortOrder;
+        return window.db
+          .from('site_pages')
+          .update({ sort_order: sortOrder, updated_at: now })
+          .eq('id', id)
+          .eq('nav_group', draggedPageGroup);
+      });
+
+      const results = await Promise.all(updates);
+      const error = results.find(result => result.error)?.error;
+      if (error) {
+        alert(error.message);
+        await loadData();
+        return;
+      }
+
+      pages.sort((a, b) => a.sort_order - b.sort_order);
+      setStatus('page-status', 'Page order saved.');
+    }
+
+    async function toggleTile(id, isActive) {
+      const { error } = await window.db.from('site_carousel_tiles').update({ is_active: isActive, updated_at: new Date().toISOString() }).eq('id', id);
+      if (error) return alert(error.message);
+      await loadData();
+    }
+
+    let draggedTileId = null;
+
+    function startTileDrag(event) {
+      draggedTileId = event.currentTarget.dataset.tileId;
+      event.currentTarget.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedTileId);
+    }
+
+    function dragTileOver(event) {
+      event.preventDefault();
+      const row = event.currentTarget;
+      if (row.dataset.tileId === draggedTileId) return;
+      row.classList.add('drag-over');
+
+      const tbody = document.getElementById('tiles-body');
+      const draggingRow = tbody.querySelector(`tr[data-tile-id="${draggedTileId}"]`);
+      const rect = row.getBoundingClientRect();
+      const shouldPlaceAfter = event.clientY > rect.top + rect.height / 2;
+      tbody.insertBefore(draggingRow, shouldPlaceAfter ? row.nextSibling : row);
+    }
+
+    function clearTileDrag(event) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+
+    async function dropTile(event) {
+      event.preventDefault();
+      clearTileDrag(event);
+      await saveTileOrder();
+    }
+
+    function endTileDrag() {
+      document.querySelectorAll('#tiles-body tr').forEach(row => {
+        row.classList.remove('dragging', 'drag-over');
+      });
+      draggedTileId = null;
+    }
+
+    async function saveTileOrder() {
+      const rows = [...document.querySelectorAll('#tiles-body tr')];
+      const carouselKey = document.getElementById('carousel-filter').value;
+      const now = new Date().toISOString();
+      const updates = rows.map((row, index) => {
+        const id = row.dataset.tileId;
+        const sortOrder = (index + 1) * 10;
+        const tile = tiles.find(item => item.id === id);
+        if (tile) tile.sort_order = sortOrder;
+        return window.db
+          .from('site_carousel_tiles')
+          .update({ sort_order: sortOrder, updated_at: now })
+          .eq('id', id)
+          .eq('carousel_key', carouselKey);
+      });
+
+      const results = await Promise.all(updates);
+      const error = results.find(result => result.error)?.error;
+      if (error) {
+        alert(error.message);
+        await loadData();
+        return;
+      }
+
+      tiles.sort((a, b) => a.sort_order - b.sort_order);
+      setStatus('tile-status', 'Carousel order saved.');
+    }
+
+    function editTile(id) {
+      const tile = tiles.find(item => item.id === id);
+      if (!tile) return;
+      editingTileId = id;
+      document.getElementById('tile-form-title').textContent = 'Edit Carousel Tile';
+      document.getElementById('tile-carousel').value = tile.carousel_key;
+      document.getElementById('tile-order').value = tile.sort_order;
+      document.getElementById('tile-title').value = tile.title;
+      document.getElementById('tile-link').value = tile.link_url;
+      document.getElementById('tile-image').value = tile.image_url;
+      document.getElementById('tile-description').value = tile.description;
+      document.getElementById('tile-active').checked = tile.is_active;
+      updateCharCount();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    async function saveTile() {
+      const title = document.getElementById('tile-title').value.trim();
+      const description = document.getElementById('tile-description').value.trim();
+      if (!title) return alert('Tile name is required.');
+      if (description.length > 150) return alert('Description must be 150 characters or fewer.');
+
+      const payload = {
+        carousel_key: document.getElementById('tile-carousel').value,
+        tile_key: editingTileId ? undefined : makeTileKey(title),
+        title,
+        description,
+        image_url: document.getElementById('tile-image').value.trim(),
+        link_url: document.getElementById('tile-link').value.trim(),
+        sort_order: editingTileId
+          ? Number(document.getElementById('tile-order').value || 0)
+          : getNextTileOrder(document.getElementById('tile-carousel').value),
+        is_active: document.getElementById('tile-active').checked,
+        updated_at: new Date().toISOString()
+      };
+
+      if (!payload.image_url || !payload.link_url) return alert('Image URL and Link URL are required.');
+      if (editingTileId) delete payload.tile_key;
+
+      const result = editingTileId
+        ? await window.db.from('site_carousel_tiles').update(payload).eq('id', editingTileId)
+        : await window.db.from('site_carousel_tiles').insert([payload]);
+
+      if (result.error) return alert(result.error.message);
+      resetTileForm();
+      await loadData();
+      setStatus('tile-status', 'Tile saved.');
+    }
+
+    async function deleteTile(id) {
+      if (!confirm('Delete this carousel tile? Deactivate it instead if you may want it later.')) return;
+      const { error } = await window.db.from('site_carousel_tiles').delete().eq('id', id);
+      if (error) return alert(error.message);
+      await loadData();
+    }
+
+    function resetTileForm() {
+      editingTileId = null;
+      document.getElementById('tile-form-title').textContent = 'Add Carousel Tile';
+      document.getElementById('tile-carousel').value = document.getElementById('carousel-filter').value;
+      document.getElementById('tile-order').value = 0;
+      document.getElementById('tile-title').value = '';
+      document.getElementById('tile-link').value = '';
+      document.getElementById('tile-image').value = '';
+      document.getElementById('tile-description').value = '';
+      document.getElementById('tile-active').checked = true;
+      updateCharCount();
+    }
+
+    function getNextTileOrder(carouselKey) {
+      const carouselTiles = tiles.filter(tile => tile.carousel_key === carouselKey);
+      const maxOrder = carouselTiles.reduce((max, tile) => Math.max(max, Number(tile.sort_order) || 0), 0);
+      return maxOrder + 10;
+    }
+
+    function updateCharCount() {
+      document.getElementById('desc-count').textContent = document.getElementById('tile-description').value.length;
+    }
+
+    function makeTileKey(title) {
+      return `${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/^(\.\.\/|\.\/|\/)+/, '');
+    }
+
+    checkSecurity();
+  </script>
+</body>
+</html>

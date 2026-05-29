@@ -166,7 +166,7 @@ window.initWarmRight = async function() {
 
   if (callTile && callTileText) {
     // PRESERVED YOUR WORKING LAYOUT STYLES
-    callTile.classList.add("info-tile", "card"); 
+    callTile.classList.add("info-tile", "card", "visible"); 
     callTile.style.width = "100%";
     callTile.style.display = "flex";
     callTile.style.flexDirection = "column";

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarmHub - Website File Explorer | Warm Right Ltd</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.adminPageTitle = "WarmHub - File Explorer";</script>
+  <script src="../assets/js/admin-include.js"></script>
+  <style>
+    :root {
+      --primary-blue: #004a99;
+      --accent-orange: #ff8c00;
+      --light-gray: #f4f7f6;
+      --border: #e5e7eb;
+      --muted: #667085;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: var(--light-gray);
+      padding: 40px;
+      visibility: hidden;
+      color: #333;
+    }
+
+    #admin-header-container { margin: -40px -40px 30px -40px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .panel { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 24px; }
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    h2 { color: var(--primary-blue); margin: 0; }
+    p { color: var(--muted); }
+    button { padding: 10px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+    .btn-accent { background: var(--accent-orange); color: white; }
+    .btn-outline { background: #fff; color: var(--primary-blue); border: 1px solid var(--border); }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .status { min-height: 22px; margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .notice { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 12px; border-radius: 8px; margin-top: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin-top: 20px; }
+    .file-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; display: flex; flex-direction: column; min-height: 260px; }
+    .file-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #f3f4f6; }
+    .file-card .body { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .file-name { font-weight: 700; color: var(--primary-blue); word-break: break-word; font-size: 14px; }
+    .file-meta { color: var(--muted); font-size: 12px; }
+    .file-path { background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-family: Consolas, monospace; font-size: 12px; word-break: break-all; }
+    .card-actions { display: flex; gap: 8px; margin-top: auto; }
+    .card-actions button { flex: 1; padding: 8px; }
+    input[type="file"] { display: none; }
+    input[type="search"] { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; min-width: 260px; font: inherit; }
+
+    @media (max-width: 768px) {
+      body { padding: 75px 14px 20px !important; }
+      #admin-header-container { margin: 0 -14px 20px -14px !important; }
+      .toolbar { align-items: stretch; }
+      .actions, input[type="search"] { width: 100%; }
+      .actions label, .actions button { flex: 1; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+
+  <main class="container">
+    <section class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Website File Explorer</h2>
+          <p>Manage image files in the GitHub repo path <strong>assets/images</strong>. Uploads and deletes create GitHub commits.</p>
+        </div>
+        <div class="actions">
+          <label class="btn-accent" for="upload-input">Add Images</label>
+          <input id="upload-input" type="file" accept="image/*" multiple onchange="addImages(this.files)">
+          <button class="btn-outline" onclick="refreshFiles()">Refresh</button>
+        </div>
+      </div>
+      <div id="notice" class="notice" hidden>
+        GitHub image management is not configured yet. Deploy the Supabase Edge Function and add the required GitHub secrets.
+      </div>
+      <div class="status" id="status">Loading GitHub images...</div>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <h2>Images</h2>
+        <input id="search" type="search" placeholder="Search images..." oninput="renderFiles()">
+      </div>
+      <div id="file-grid" class="grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+    const GITHUB_IMAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/github-images`;
+
+    let currentSession = null;
+    let imageFiles = [];
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib) { setTimeout(checkSecurity, 50); return; }
+
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      currentSession = session;
+      await window.loadAdminHeader(session);
+      document.body.style.visibility = 'visible';
+      await refreshFiles();
+    }
+
+    async function refreshFiles() {
+      try {
+        setStatus('Loading GitHub images...');
+        const data = await callImageFunction('list');
+        imageFiles = data.files || [];
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+        document.getElementById('notice').hidden = true;
+        setStatus(`${imageFiles.length} image file${imageFiles.length === 1 ? '' : 's'} loaded from GitHub.`);
+        renderFiles();
+      } catch (err) {
+        imageFiles = [];
+        renderFiles();
+        document.getElementById('notice').hidden = false;
+        setStatus(err.message);
+      }
+    }
+
+    async function addImages(fileList) {
+      const files = Array.from(fileList || []).filter(file => file.type.startsWith('image/'));
+      if (!files.length) return;
+
+      try {
+        setStatus(`Uploading ${files.length} image file${files.length === 1 ? '' : 's'} to GitHub...`);
+        for (const file of files) {
+          await callImageFunction('upload', {
+            name: makeSafeFileName(file.name),
+            contentBase64: await fileToBase64(file),
+          }, 'POST');
+        }
+
+        document.getElementById('upload-input').value = '';
+        setStatus(`${files.length} image file${files.length === 1 ? '' : 's'} committed to GitHub.`);
+        await refreshFiles();
+      } catch (err) {
+        setStatus(`Upload failed: ${err.message}`);
+      }
+    }
+
+    async function deleteImage(name) {
+      const file = imageFiles.find(item => item.name === name);
+      if (!file) return;
+      if (!confirm(`Delete ${name} from GitHub assets/images? This will create a delete commit.`)) return;
+
+      try {
+        await callImageFunction('delete', { path: file.path, sha: file.sha }, 'DELETE');
+        setStatus(`${name} deleted from GitHub.`);
+        await refreshFiles();
+      } catch (err) {
+        setStatus(`Unable to delete ${name}: ${err.message}`);
+      }
+    }
+
+    async function copyPath(name) {
+      const file = imageFiles.find(item => item.name === name);
+      const path = file?.webPath || `assets/images/${name}`;
+      await navigator.clipboard.writeText(path);
+      setStatus(`Copied ${path}`);
+    }
+
+    function renderFiles() {
+      const grid = document.getElementById('file-grid');
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      const files = imageFiles.filter(item => item.name.toLowerCase().includes(query));
+
+      grid.innerHTML = files.map(item => {
+        const encodedName = encodeURIComponent(item.name);
+        return `
+        <article class="file-card">
+          <img src="${escapeAttr(item.downloadUrl || '../assets/images/no-image.jpg')}" alt="${escapeAttr(item.name)}">
+          <div class="body">
+            <div class="file-name">${escapeHtml(item.name)}</div>
+            <div class="file-meta">${formatBytes(item.size)} - GitHub repo file</div>
+            <div class="file-path">${escapeHtml(item.webPath || `assets/images/${item.name}`)}</div>
+            <div class="card-actions">
+              <button class="btn-outline" onclick="copyPath(decodeURIComponent('${encodedName}'))">Copy Path</button>
+              <button class="btn-danger" onclick="deleteImage(decodeURIComponent('${encodedName}'))">Delete</button>
+            </div>
+          </div>
+        </article>
+      `;
+      }).join('');
+    }
+
+    async function callImageFunction(action, body = null, method = 'GET') {
+      if (!currentSession?.access_token) throw new Error('Your admin session has expired. Please sign in again.');
+
+      const response = await fetch(`${GITHUB_IMAGES_FUNCTION}?action=${encodeURIComponent(action)}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
+      return data;
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function makeSafeFileName(name) {
+      const cleaned = name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-');
+      return cleaned.replace(/(^-|-$)/g, '') || `image-${Date.now()}.png`;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function setStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/\\/g, '\\\\');
+    }
+
+    checkSecurity();
+  </script>
+</body>
+</html>

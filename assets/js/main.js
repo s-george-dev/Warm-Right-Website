@@ -81,10 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const nextBtn = container.querySelector('.carousel-btn.right');
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let scrollSpeed = 70;
+    // Carousel speed is pixels per second. Try 3-8 for a slow drift, 15-25 for faster movement.
+    const carouselSpeed = 25;
     let isPaused = false;
     let isVisible = true;
     let scrollDirection = 1;
+    let seekDirection = 0;
+    let scrollPosition = track.scrollLeft;
     let lastFrameTime;
     let resumeTimeout;
 
@@ -109,26 +112,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function animateScroll(timestamp) {
-      if (prefersReducedMotion || isPaused || !isVisible || !track) {
+      if (prefersReducedMotion || (isPaused && seekDirection === 0) || !isVisible || !track) {
         lastFrameTime = timestamp;
         requestAnimationFrame(animateScroll);
         return;
       }
 
       if (lastFrameTime === undefined) lastFrameTime = timestamp;
-      const elapsedSeconds = Math.min((timestamp - lastFrameTime) / 3100, 0.05);
+      const elapsedSeconds = Math.min((timestamp - lastFrameTime) / 1000, 0.05);
       lastFrameTime = timestamp;
 
-      track.scrollLeft += scrollSpeed * elapsedSeconds * scrollDirection;
+      const activeDirection = seekDirection || scrollDirection;
+      const activeSpeed = seekDirection ? carouselSpeed * 2 : carouselSpeed;
+
+      scrollPosition += activeSpeed * elapsedSeconds * activeDirection;
+      track.scrollLeft = scrollPosition;
 
       const maxScroll = track.scrollWidth - track.clientWidth;
 
-      if (scrollDirection === 1 && track.scrollLeft >= maxScroll - 5) {
+      if (activeDirection === 1 && track.scrollLeft >= maxScroll - 5) {
         scrollDirection = -1;
-        track.scrollLeft = maxScroll;
-      } else if (scrollDirection === -1 && track.scrollLeft <= 5) {
+        scrollPosition = maxScroll;
+        track.scrollLeft = scrollPosition;
+      } else if (activeDirection === -1 && track.scrollLeft <= 5) {
         scrollDirection = 1;
-        track.scrollLeft = 0;
+        scrollPosition = 0;
+        track.scrollLeft = scrollPosition;
       }
 
       requestAnimationFrame(animateScroll);
@@ -144,21 +153,47 @@ document.addEventListener("DOMContentLoaded", () => {
       track.addEventListener('touchend', () => pauseBriefly(900), { passive: true });
 
       // Hover + Touch pause
-      container.addEventListener('mouseenter', () => isPaused = true);
+      container.addEventListener('mouseenter', () => {
+        if (seekDirection === 0) isPaused = true;
+      });
       container.addEventListener('mouseleave', () => {
         isPaused = false;
+        seekDirection = 0;
         lastFrameTime = undefined;
       });
     }
 
     // Buttons
+    function startSeek(dir) {
+      seekDirection = dir;
+      isPaused = false;
+      scrollPosition = track.scrollLeft;
+      lastFrameTime = undefined;
+    }
+
+    function stopSeek() {
+      seekDirection = 0;
+      isPaused = true;
+      scrollPosition = track.scrollLeft;
+      lastFrameTime = undefined;
+    }
+
     function scrollByTile(dir = 1) {
       const tileWidth = tiles[0]?.offsetWidth + 24 || 280;
       track.scrollBy({ left: dir * tileWidth, behavior: 'smooth' });
+      scrollPosition = track.scrollLeft + (dir * tileWidth);
     }
 
-    if (nextBtn) nextBtn.addEventListener('click', () => { scrollByTile(1); pauseBriefly(1400); });
-    if (prevBtn) prevBtn.addEventListener('click', () => { scrollByTile(-1); pauseBriefly(1400); });
+    if (nextBtn) {
+      nextBtn.addEventListener('mouseenter', () => startSeek(1));
+      nextBtn.addEventListener('mouseleave', stopSeek);
+      nextBtn.addEventListener('click', () => { scrollByTile(1); pauseBriefly(1400); });
+    }
+    if (prevBtn) {
+      prevBtn.addEventListener('mouseenter', () => startSeek(-1));
+      prevBtn.addEventListener('mouseleave', stopSeek);
+      prevBtn.addEventListener('click', () => { scrollByTile(-1); pauseBriefly(1400); });
+    }
 
     // Start animation
     requestAnimationFrame(animateScroll);

@@ -1,11 +1,28 @@
 // include.js - Shared Loader
 
-// 1. Initialize Supabase globally
-if (typeof supabase !== 'undefined') {
-  window.db = supabase.createClient(
-    'https://axampuprcnauxbbijmmt.supabase.co', 
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ'
-  );
+const WARM_RIGHT_SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+const WARM_RIGHT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+
+function loadScriptOnce(src) {
+  if (document.querySelector(`script[src="${src}"]`)) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function initPublicDatabase() {
+  if (typeof supabase === 'undefined') {
+    await loadScriptOnce('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+  }
+
+  if (!window.db && typeof supabase !== 'undefined') {
+    window.db = supabase.createClient(WARM_RIGHT_SUPABASE_URL, WARM_RIGHT_SUPABASE_KEY);
+  }
 }
 
 function loadHTML(id, file) {
@@ -23,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const partialsPath = siteRoot + "partials/";
 
   Promise.all([
+    initPublicDatabase(),
+    loadScriptOnce(siteRoot + "assets/js/site-management-public.js?v=3"),
     loadHTML("header", partialsPath + "header.html"),
     loadHTML("footer", partialsPath + "footer.html")
   ]).then(() => {
