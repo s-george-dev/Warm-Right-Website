@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (lastFrameTime === undefined) lastFrameTime = timestamp;
-      const elapsedSeconds = Math.min((timestamp - lastFrameTime) / 1000, 0.05);
+      const elapsedSeconds = Math.min((timestamp - lastFrameTime) / 3100, 0.05);
       lastFrameTime = timestamp;
 
       track.scrollLeft += scrollSpeed * elapsedSeconds * scrollDirection;
