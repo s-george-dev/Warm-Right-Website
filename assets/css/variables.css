@@ -16,6 +16,7 @@
   --text-banner-secondary: White;
   --primary-blue: rgba(10, 44, 102, 0.95);
   --accent-orange: #D97706;
+  --base-font-size: 14px;
 }
 
 /* Dark Mode */
@@ -32,5 +33,6 @@
   --nav-background: rgba(10, 44, 102, 0.95) ;
   --text-banner-primary:;
   --text-banner-secondary:;
+   --base-font-size: 14px;
 }
 

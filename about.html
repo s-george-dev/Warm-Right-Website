@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="assets/css/header.css">
 <link rel="stylesheet" href="assets/css/hero.css">
 <link rel="stylesheet" href="assets/css/responsive.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <header id="header"></header>
 <body>
@@ -73,18 +74,14 @@
       We cover Kent, South East London, and East Sussex. Whether you need an emergency repair, a full installation, or a yearly service, Warm Right is ready to help.  
     </p>
 
-    <!-- Embedded Map -->
- <div class="map-container">
-  <div class="map-overlay" id="mapOverlay">
-    <div class="map-message">Click to activate map</div>
-  </div>
-  <iframe
-    id="mapIframe"
-    src="https://www.google.com/maps/d/embed?mid=18_fkJBd3w9pLf76bkD9fZi64g6JVraw&ehbc=2E312F&noprof=1"
-    allowfullscreen
-    loading="lazy"
-  ></iframe>
-</div>
+    <div class="map-container coverage-map-shell card visible">
+      <div id="coverage-map" class="coverage-map" aria-label="Warm Right coverage map"></div>
+      <div id="coverage-map-empty" class="coverage-map-empty" hidden>Coverage map areas will be available soon.</div>
+    </div>
+    <div id="coverage-map-key" class="coverage-map-key card visible" hidden>
+      <h3>Coverage Key</h3>
+      <div id="coverage-map-key-list" class="coverage-map-key-list"></div>
+    </div>
 
 
 </section>
@@ -93,6 +90,109 @@
 
   <footer id="footer"></footer>
 <!-- <button id="theme-toggle">Toggle Dark Mode</button>           TO BE ADDED LATER   -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    async function loadCoverageMap() {
+      if (!window.L) { setTimeout(loadCoverageMap, 100); return; }
+      const mapEl = document.getElementById('coverage-map');
+      if (!mapEl) return;
+
+      const map = L.map(mapEl, { scrollWheelZoom: false }).setView([51.2787, 0.5217], 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const lib = window.supabase || window.Supabase;
+      if (!lib) return;
+      const db = lib.createClient(
+        'https://axampuprcnauxbbijmmt.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ'
+      );
+
+      const { data, error } = await db
+        .from('site_coverage_zones')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error || !data || !data.length) {
+        document.getElementById('coverage-map-empty').hidden = false;
+        return;
+      }
+
+      const bounds = [];
+      const mapLayers = [];
+      data.forEach(zone => {
+        const color = zone.color || '#0a2c66';
+        const popup = `<strong>${escapeCoverageHtml(zone.title)}</strong>${zone.description ? `<br>${escapeCoverageHtml(zone.description)}` : ''}`;
+        let layer = null;
+
+        if (zone.shape_type === 'circle' && zone.geometry?.center) {
+          layer = L.circle(zone.geometry.center, {
+            radius: Number(zone.geometry.radius) || 1000,
+            color,
+            fillColor: color,
+            fillOpacity: 0.22,
+            weight: 2
+          });
+        } else if (zone.shape_type === 'polygon' && zone.geometry?.latlngs) {
+          layer = L.polygon(zone.geometry.latlngs, {
+            color,
+            fillColor: color,
+            fillOpacity: 0.22,
+            weight: 2
+          });
+        }
+
+        if (!layer) return;
+        layer.bindPopup(popup).addTo(map);
+        layer.coverageZoneId = zone.id;
+        mapLayers.push(layer);
+        bounds.push(layer.getBounds());
+      });
+
+      renderCoverageKey(data, mapLayers, map);
+
+      if (bounds.length) {
+        const combinedBounds = bounds.reduce((acc, item) => acc.extend(item), bounds[0]);
+        map.fitBounds(combinedBounds, { padding: [28, 28], maxZoom: 11 });
+      }
+    }
+
+    function renderCoverageKey(zones, layers, map) {
+      const key = document.getElementById('coverage-map-key');
+      const list = document.getElementById('coverage-map-key-list');
+      if (!key || !list || !zones.length) return;
+
+      key.hidden = false;
+      list.innerHTML = zones.map(zone => `
+        <button class="coverage-key-item" type="button" data-zone-id="${escapeCoverageHtml(zone.id)}">
+          <span class="coverage-key-swatch" style="background:${escapeCoverageHtml(zone.color || '#0a2c66')}"></span>
+          <span class="coverage-key-copy">
+            <strong>${escapeCoverageHtml(zone.title)}</strong>
+            ${zone.description ? `<span>${escapeCoverageHtml(zone.description)}</span>` : ''}
+          </span>
+        </button>
+      `).join('');
+
+      list.querySelectorAll('.coverage-key-item').forEach(button => {
+        button.addEventListener('click', () => {
+          const layer = layers.find(item => item.coverageZoneId === button.dataset.zoneId);
+          if (!layer) return;
+          map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 12 });
+          layer.openPopup();
+        });
+      });
+    }
+
+    function escapeCoverageHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    loadCoverageMap();
+  </script>
   <script src="assets/js/include.js"></script>
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/main.js"></script>

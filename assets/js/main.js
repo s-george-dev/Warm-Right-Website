@@ -83,6 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     // Carousel speed is pixels per second. Try 3-8 for a slow drift, 15-25 for faster movement.
     const carouselSpeed = 25;
+    const hoverSeekMultiplier = 2.75;
+    const clickTileJump = 3;
+    const clickGlideMs = 650;
     let isPaused = false;
     let isVisible = true;
     let scrollDirection = 1;
@@ -90,6 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let scrollPosition = track.scrollLeft;
     let lastFrameTime;
     let resumeTimeout;
+    let clickAnimation;
 
     function pauseBriefly(delay = 1200) {
       isPaused = true;
@@ -123,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
       lastFrameTime = timestamp;
 
       const activeDirection = seekDirection || scrollDirection;
-      const activeSpeed = seekDirection ? carouselSpeed * 2 : carouselSpeed;
+      const activeSpeed = seekDirection ? carouselSpeed * hoverSeekMultiplier : carouselSpeed;
 
       scrollPosition += activeSpeed * elapsedSeconds * activeDirection;
       track.scrollLeft = scrollPosition;
@@ -165,6 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Buttons
     function startSeek(dir) {
+      cancelAnimationFrame(clickAnimation);
       seekDirection = dir;
       isPaused = false;
       scrollPosition = track.scrollLeft;
@@ -180,19 +185,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function scrollByTile(dir = 1) {
       const tileWidth = tiles[0]?.offsetWidth + 24 || 280;
-      track.scrollBy({ left: dir * tileWidth, behavior: 'smooth' });
-      scrollPosition = track.scrollLeft + (dir * tileWidth);
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const start = track.scrollLeft;
+      const target = Math.max(0, Math.min(maxScroll, start + (dir * tileWidth * clickTileJump)));
+      const startTime = performance.now();
+
+      cancelAnimationFrame(clickAnimation);
+      isPaused = true;
+      seekDirection = 0;
+
+      function glide(now) {
+        const progress = Math.min((now - startTime) / clickGlideMs, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        scrollPosition = start + ((target - start) * eased);
+        track.scrollLeft = scrollPosition;
+
+        if (progress < 1) {
+          clickAnimation = requestAnimationFrame(glide);
+          return;
+        }
+
+        scrollPosition = target;
+        track.scrollLeft = target;
+        lastFrameTime = undefined;
+      }
+
+      clickAnimation = requestAnimationFrame(glide);
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('mouseenter', () => startSeek(1));
+      nextBtn.addEventListener('mouseenter', () => startSeek(2));
       nextBtn.addEventListener('mouseleave', stopSeek);
-      nextBtn.addEventListener('click', () => { scrollByTile(1); pauseBriefly(1400); });
+      nextBtn.addEventListener('click', () => { scrollByTile(6); pauseBriefly(1400); });
     }
     if (prevBtn) {
-      prevBtn.addEventListener('mouseenter', () => startSeek(-1));
+      prevBtn.addEventListener('mouseenter', () => startSeek(-2));
       prevBtn.addEventListener('mouseleave', stopSeek);
-      prevBtn.addEventListener('click', () => { scrollByTile(-1); pauseBriefly(1400); });
+      prevBtn.addEventListener('click', () => { scrollByTile(-6); pauseBriefly(1400); });
     }
 
     // Start animation
@@ -256,6 +285,21 @@ function initMapOverlay() {
     });
   }
 }
+
+//accessibility widget for text size adjustment, using CSS variable for dynamic font sizing
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("accessibility-toggle")) {
+    const options = document.getElementById("accessibility-options");
+    options.style.display = options.style.display === "none" ? "block" : "inline-block";
+  }
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "text-size") {
+    document.documentElement.style.setProperty('--base-font-size', `${e.target.value}px`);
+  }
+  
+});
 
 document.addEventListener("DOMContentLoaded", initMapOverlay);
 document.addEventListener("includesLoaded", initMapOverlay);

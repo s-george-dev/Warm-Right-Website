@@ -133,6 +133,7 @@
 }
 .card.visible {
   opacity: 1;
+  transform: none;
   transition-delay: 0s !important;
 }
 .values-list {

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarmHub - Customise Coverage | Warm Right Ltd</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script>window.adminPageTitle = "WarmHub - Customise Coverage";</script>
+  <script src="../assets/js/admin-include.js"></script>
+  <style>
+    body { font-family:'Segoe UI', sans-serif; background:#f4f7f6; margin:0; padding:40px; visibility:hidden; color:#1f2937; }
+    #admin-header-container { margin:-40px -40px 30px -40px; }
+    .container { max-width:1250px; margin:0 auto; padding:0 20px; }
+    .panel { background:#fff; padding:24px; border-radius:12px; box-shadow:0 4px 6px rgba(0,0,0,0.05); }
+    .layout { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:24px; align-items:start; }
+    #coverage-editor-map { height:640px; min-height:420px; border-radius:12px; overflow:hidden; border:1px solid #dbe2ea; }
+    label { display:block; font-weight:700; margin:14px 0 6px; font-size:14px; }
+    input, textarea, button { font-family:'Segoe UI', sans-serif; }
+    input, textarea { width:100%; box-sizing:border-box; padding:11px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:15px; }
+    textarea { min-height:95px; resize:vertical; }
+    button { padding:10px 16px; border-radius:6px; border:0; font-weight:700; cursor:pointer; }
+    .btn-primary { background:#004a99; color:#fff; }
+    .btn-accent { background:#ff8c00; color:#fff; }
+    .btn-outline { background:#fff; border:1px solid #cbd5e1; color:#475569; }
+    .btn-danger { background:#dc2626; color:#fff; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    .hint { color:#64748b; line-height:1.5; margin:0 0 16px; }
+    .zone-list { display:grid; gap:10px; margin-top:12px; }
+    .zone-item { display:flex; gap:10px; align-items:center; border:1px solid #e5e7eb; border-radius:8px; padding:10px; background:#fff; text-align:left; width:100%; }
+    .zone-item:hover { border-color:#004a99; box-shadow:0 6px 18px rgba(0,74,153,.1); }
+    .zone-swatch { width:18px; height:18px; border-radius:50%; flex:0 0 auto; border:1px solid rgba(0,0,0,.15); }
+    .zone-name { font-weight:700; color:#0f172a; }
+    .zone-meta { font-size:12px; color:#64748b; margin-top:2px; }
+    .selected-note { padding:10px 12px; background:#eef6ff; color:#004a99; border-radius:8px; margin-bottom:12px; }
+    .active-row { display:flex; gap:8px; align-items:center; margin-top:12px; font-weight:700; }
+    .active-row input { width:auto; }
+    @media (max-width: 980px) {
+      body { padding:20px; }
+      #admin-header-container { margin:-20px -20px 24px -20px; }
+      .layout { grid-template-columns:1fr; }
+      #coverage-editor-map { height:520px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+
+  <main class="container">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px;">
+      <div>
+        <h1 style="margin:0 0 8px;">Customise Coverage</h1>
+        <p class="hint">Draw polygons or circles for the areas you cover. Select a saved area or newly drawn shape, then add its label, note, and colour.</p>
+      </div>
+      <a class="btn-outline" href="admin-landed.html" style="text-decoration:none;">Back to Hub</a>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <div id="coverage-editor-map"></div>
+      </section>
+
+      <aside class="panel">
+        <div id="selection-note" class="selected-note">Draw a polygon/circle, or select an existing area.</div>
+
+        <label for="zone-title">Area label</label>
+        <input id="zone-title" placeholder="Main coverage area">
+
+        <label for="zone-description">Customer note</label>
+        <textarea id="zone-description" placeholder="Additional costs may apply..."></textarea>
+
+        <label for="zone-color">Area colour</label>
+        <input id="zone-color" type="color" value="#0a2c66">
+
+        <label class="active-row">
+          <input id="zone-active" type="checkbox" checked>
+          Show on website
+        </label>
+
+        <div class="actions">
+          <button class="btn-primary" onclick="saveSelectedZone()">Save Area</button>
+          <button class="btn-outline" onclick="clearSelection()">Clear Selection</button>
+          <button class="btn-danger" onclick="deleteSelectedZone()">Delete</button>
+        </div>
+
+        <hr style="margin:24px 0; border:0; border-top:1px solid #e5e7eb;">
+
+        <h2 style="font-size:1.15rem; margin:0 0 8px;">Saved Areas</h2>
+        <div id="zone-list" class="zone-list"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+
+    let map;
+    let drawnItems;
+    let selectedLayer = null;
+    let zones = [];
+    const layerById = new Map();
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib || !window.L?.Control?.Draw) { setTimeout(checkSecurity, 75); return; }
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+      await window.loadAdminHeader(session);
+      document.body.style.visibility = 'visible';
+      initMap();
+      await loadZones();
+    }
+
+    function initMap() {
+      map = L.map('coverage-editor-map').setView([51.2787, 0.5217], 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      drawnItems = new L.FeatureGroup();
+      map.addLayer(drawnItems);
+
+      const drawControl = new L.Control.Draw({
+        draw: {
+          marker: false,
+          polyline: false,
+          rectangle: false,
+          circlemarker: false,
+          polygon: { allowIntersection: false, showArea: true },
+          circle: true
+        },
+        edit: { featureGroup: drawnItems }
+      });
+      map.addControl(drawControl);
+
+      map.on(L.Draw.Event.CREATED, event => {
+        const layer = event.layer;
+        layer.zoneData = {
+          shape_type: event.layerType === 'circle' ? 'circle' : 'polygon',
+          color: document.getElementById('zone-color').value || '#0a2c66',
+          is_active: true
+        };
+        styleLayer(layer, layer.zoneData.color);
+        bindLayer(layer);
+        drawnItems.addLayer(layer);
+        selectLayer(layer);
+      });
+
+      map.on(L.Draw.Event.EDITED, event => {
+        event.layers.eachLayer(layer => {
+          if (layer.zoneData?.id) saveLayerGeometryOnly(layer);
+        });
+      });
+    }
+
+    async function loadZones() {
+      const { data, error } = await window.db.from('site_coverage_zones').select('*').order('sort_order', { ascending: true });
+      if (error) {
+        document.getElementById('zone-list').innerHTML = `<p style="color:#dc2626;">Unable to load zones: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      zones = data || [];
+      drawnItems.clearLayers();
+      layerById.clear();
+
+      zones.forEach(zone => {
+        const layer = layerFromZone(zone);
+        if (!layer) return;
+        layer.zoneData = zone;
+        styleLayer(layer, zone.color);
+        bindLayer(layer);
+        drawnItems.addLayer(layer);
+        layerById.set(zone.id, layer);
+      });
+
+      renderZoneList();
+      if (drawnItems.getLayers().length) map.fitBounds(drawnItems.getBounds(), { padding: [30, 30], maxZoom: 11 });
+    }
+
+    function layerFromZone(zone) {
+      if (zone.shape_type === 'circle' && zone.geometry?.center) {
+        return L.circle(zone.geometry.center, { radius: Number(zone.geometry.radius) || 1000 });
+      }
+      if (zone.shape_type === 'polygon' && zone.geometry?.latlngs) {
+        return L.polygon(zone.geometry.latlngs);
+      }
+      return null;
+    }
+
+    function bindLayer(layer) {
+      layer.on('click', () => selectLayer(layer));
+    }
+
+    function styleLayer(layer, color) {
+      layer.setStyle?.({ color, fillColor: color, fillOpacity: 0.22, weight: 2 });
+    }
+
+    function selectLayer(layer) {
+      selectedLayer = layer;
+      const data = layer.zoneData || {};
+      document.getElementById('selection-note').textContent = data.id ? 'Editing saved coverage area.' : 'Editing new unsaved coverage area.';
+      document.getElementById('zone-title').value = data.title || '';
+      document.getElementById('zone-description').value = data.description || '';
+      document.getElementById('zone-color').value = data.color || '#0a2c66';
+      document.getElementById('zone-active').checked = data.is_active !== false;
+      styleLayer(layer, document.getElementById('zone-color').value);
+    }
+
+    function clearSelection() {
+      selectedLayer = null;
+      document.getElementById('selection-note').textContent = 'Draw a polygon/circle, or select an existing area.';
+      document.getElementById('zone-title').value = '';
+      document.getElementById('zone-description').value = '';
+      document.getElementById('zone-color').value = '#0a2c66';
+      document.getElementById('zone-active').checked = true;
+    }
+
+    function geometryFromLayer(layer) {
+      if (layer instanceof L.Circle) {
+        const center = layer.getLatLng();
+        return {
+          shape_type: 'circle',
+          geometry: { center: [center.lat, center.lng], radius: layer.getRadius() }
+        };
+      }
+      return {
+        shape_type: 'polygon',
+        geometry: { latlngs: layer.getLatLngs() }
+      };
+    }
+
+    async function saveSelectedZone() {
+      if (!selectedLayer) return alert('Draw or select an area first.');
+      const title = document.getElementById('zone-title').value.trim();
+      if (!title) return alert('Area label is required.');
+
+      const shape = geometryFromLayer(selectedLayer);
+      const payload = {
+        title,
+        description: document.getElementById('zone-description').value.trim(),
+        color: document.getElementById('zone-color').value || '#0a2c66',
+        is_active: document.getElementById('zone-active').checked,
+        shape_type: shape.shape_type,
+        geometry: shape.geometry,
+        updated_at: new Date().toISOString()
+      };
+
+      const existingId = selectedLayer.zoneData?.id;
+      const { data, error } = existingId
+        ? await window.db.from('site_coverage_zones').update(payload).eq('id', existingId).select('*').single()
+        : await window.db.from('site_coverage_zones').insert([{ ...payload, sort_order: zones.length }]).select('*').single();
+
+      if (error) return alert(error.message);
+      selectedLayer.zoneData = data;
+      styleLayer(selectedLayer, data.color);
+      await loadZones();
+      const savedLayer = layerById.get(data.id);
+      if (savedLayer) selectLayer(savedLayer);
+    }
+
+    async function saveLayerGeometryOnly(layer) {
+      const id = layer.zoneData?.id;
+      if (!id) return;
+      const shape = geometryFromLayer(layer);
+      await window.db
+        .from('site_coverage_zones')
+        .update({ shape_type: shape.shape_type, geometry: shape.geometry, updated_at: new Date().toISOString() })
+        .eq('id', id);
+    }
+
+    async function deleteSelectedZone() {
+      if (!selectedLayer) return;
+      const id = selectedLayer.zoneData?.id;
+      if (id && !confirm('Delete this coverage area?')) return;
+      if (id) await window.db.from('site_coverage_zones').delete().eq('id', id);
+      drawnItems.removeLayer(selectedLayer);
+      selectedLayer = null;
+      clearSelection();
+      await loadZones();
+    }
+
+    function renderZoneList() {
+      const list = document.getElementById('zone-list');
+      if (!zones.length) {
+        list.innerHTML = '<p class="hint">No coverage areas have been saved yet.</p>';
+        return;
+      }
+      list.innerHTML = zones.map(zone => `
+        <button class="zone-item" onclick="selectZone('${zone.id}')">
+          <span class="zone-swatch" style="background:${escapeHtml(zone.color)}"></span>
+          <span>
+            <span class="zone-name">${escapeHtml(zone.title)}</span>
+            <span class="zone-meta">${zone.is_active ? 'Visible' : 'Hidden'} - ${escapeHtml(zone.shape_type)}</span>
+          </span>
+        </button>
+      `).join('');
+    }
+
+    function selectZone(id) {
+      const layer = layerById.get(id);
+      if (!layer) return;
+      selectLayer(layer);
+      map.fitBounds(layer.getBounds(), { padding: [35, 35], maxZoom: 12 });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    document.getElementById('zone-color').addEventListener('input', event => {
+      if (selectedLayer) styleLayer(selectedLayer, event.target.value);
+    });
+
+    checkSecurity();
+  </script>
+</body>
+</html>

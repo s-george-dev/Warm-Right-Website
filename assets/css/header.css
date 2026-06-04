@@ -9,7 +9,7 @@ html, body {
 /* --- DESKTOP HEADER CONTAINER --- */
 #main-nav-bar.header {
   position: absolute;
-  top: 20px;
+  top: 5px;
   left: 0;
   right: 0;
   width: 95%;
@@ -61,7 +61,7 @@ html, body {
 #main-nav-bar .brand img { height: 35px; width: auto; }
 #main-nav-bar .brand .title { font-weight: 700; color: var(--nav-background); font-size: 1rem; white-space: nowrap;  }
 #main-nav-bar .brand .sub { font-size: 0.85rem; color: var(--nav-background); }
-#main-nav-bar .brand-separator { width: 1px; height: 20px; background: #eee; margin-left: 10px; }
+
 
 /* --- DESKTOP NAV LINKS --- */
 #main-nav-bar .nav { display: flex; gap: 15px; align-items: center; }
@@ -70,6 +70,7 @@ html, body {
   text-decoration: none; 
   font-weight: 600; 
   font-size: 0.9rem; 
+  line-height: 1.2;
   padding: 8px 10px;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
@@ -82,7 +83,17 @@ html, body {
 }
 
 /* --- DESKTOP DROPDOWNS --- */
-#main-nav-bar .dropdown { position: relative; }
+#main-nav-bar .dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+#main-nav-bar .dropdown > a {
+  display: flex;
+  align-items: center;
+}
+
 #main-nav-bar .dropdown-menu {
   display: none;
   position: absolute;
