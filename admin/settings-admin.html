@@ -197,6 +197,9 @@
     </table>
 </div>
  <h3>App settings</h3>
+<label>Team testimonial email address</label>
+<input type="email" id="testimonial-team-email" placeholder="info@warmright.uk">
+<button class="btn-primary" onclick="saveTestimonialTeamEmail()" style="margin-bottom: 18px;">Save Team Email</button>
 <button id="installAppBtn" class="btn-primary" onclick="triggerAppInstall()" style="background: #10b981; border-color: #10b981;">
     ⬇️ Install Warm Right App
 </button>
@@ -258,6 +261,7 @@
       if (typeof window.loadUserManagement === 'function') {
         await window.loadUserManagement();
       }
+      await loadSiteSettings();
 
       // Handle Deep Linking (Opening specific tabs via hash #password)
       document.addEventListener("switchAdminTab", (e) => {
@@ -437,6 +441,40 @@
       const name = document.getElementById('display-name').value.trim();
       const { error } = await window.db.auth.updateUser({ data: { display_name: name } });
       if (error) alert(error.message); else location.reload();
+    }
+
+    async function loadSiteSettings() {
+      const input = document.getElementById('testimonial-team-email');
+      if (!input) return;
+      const { data, error } = await window.db
+        .from('site_settings')
+        .select('setting_value')
+        .eq('setting_key', 'testimonial_team_email')
+        .maybeSingle();
+      if (error) {
+        console.warn(error);
+        input.value = 'info@warmright.uk';
+        return;
+      }
+      input.value = data?.setting_value || 'info@warmright.uk';
+    }
+
+    async function saveTestimonialTeamEmail() {
+      const input = document.getElementById('testimonial-team-email');
+      const msg = document.getElementById('msg');
+      const email = input.value.trim();
+      if (!email || !email.includes('@')) {
+        msg.style.color = "var(--error-red)";
+        msg.textContent = "Please enter a valid team email address.";
+        return;
+      }
+      const { error } = await window.db.from('site_settings').upsert({
+        setting_key: 'testimonial_team_email',
+        setting_value: email,
+        updated_at: new Date().toISOString()
+      });
+      msg.style.color = error ? "var(--error-red)" : "var(--success-green)";
+      msg.textContent = error ? error.message : "Team email saved.";
     }
 
     window.addEventListener('beforeinstallprompt', (event) => {

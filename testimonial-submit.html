@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Warm Right Ltd - Send a Testimonial</title>
+  <link rel="icon" href="assets/images/favicon.png">
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/mobile-nav.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <link rel="stylesheet" href="assets/css/footer.css">
+  <link rel="stylesheet" href="assets/css/header.css">
+  <link rel="stylesheet" href="assets/css/hero.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .testimonial-submit-panel {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 18px 45px rgba(12, 22, 40, 0.08);
+      padding: clamp(20px, 4vw, 38px);
+    }
+    .rating-picker {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 18px;
+    }
+    .rating-picker button {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      border: 1px solid #d8e2ee;
+      background: #fff;
+      color: #153a70;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .rating-picker button.active {
+      background: #ffd166;
+      border-color: #e08100;
+      color: #062940;
+    }
+    .preview-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .preview-list img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    .submit-status {
+      margin-top: 16px;
+      font-weight: 700;
+      color: #0a2c66;
+    }
+  </style>
+</head>
+<body>
+  <header id="header"></header>
+
+  <section class="hero">
+    <div class="slide active" style="background-image:url('assets/images/testimonials.jpg');">
+      <div class="slide-content">
+        <h1>Send a Testimonial</h1>
+        <p>Tell us how we did and share photos from the visit if you would like to.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="container section">
+    <h2 class="section-heading card">Share Your Experience</h2>
+    <section class="testimonial-submit-panel">
+      <form id="testimonial-submit-form" novalidate>
+        <label for="customer_name">Your name</label>
+        <input id="customer_name" name="customer_name" required autocomplete="name">
+
+        <label for="customer_email">Email address</label>
+        <input id="customer_email" name="customer_email" type="email" required autocomplete="email">
+
+        <label for="customer_phone">Phone number</label>
+        <input id="customer_phone" name="customer_phone" autocomplete="tel">
+
+        <label>Rating</label>
+        <div class="rating-picker" id="rating-picker" aria-label="Rating out of 5">
+          <button type="button" data-rating="1" aria-label="1 star">&#9733;</button>
+          <button type="button" data-rating="2" aria-label="2 stars">&#9733;</button>
+          <button type="button" data-rating="3" aria-label="3 stars">&#9733;</button>
+          <button type="button" data-rating="4" aria-label="4 stars">&#9733;</button>
+          <button type="button" data-rating="5" aria-label="5 stars">&#9733;</button>
+        </div>
+        <input type="hidden" id="rating" name="rating" value="5">
+
+        <label for="subject">Short title</label>
+        <input id="subject" name="subject" maxlength="90" placeholder="e.g. Brilliant boiler service">
+
+        <label for="content">Your testimonial</label>
+        <textarea id="content" name="content" rows="7" required maxlength="1800"></textarea>
+
+        <label for="testimonial_images">Photos</label>
+        <input id="testimonial_images" name="testimonial_images" type="file" accept="image/*" multiple>
+        <div id="image-preview" class="preview-list"></div>
+
+        <button type="submit" style="margin-top:18px;">Submit Testimonial</button>
+        <p id="submit-status" class="submit-status" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer id="footer"></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.db = window.db || window.supabase.createClient(
+      'https://axampuprcnauxbbijmmt.supabase.co',
+      'sb_publishable_NFuFkO0tybTuMvYOQekQmA_62araOjM'
+    );
+    let selectedRating = 5;
+
+    function setRating(value) {
+      selectedRating = value;
+      document.getElementById('rating').value = value;
+      document.querySelectorAll('#rating-picker button').forEach((btn) => {
+        btn.classList.toggle('active', Number(btn.dataset.rating) <= value);
+      });
+    }
+
+    document.querySelectorAll('#rating-picker button').forEach((btn) => {
+      btn.addEventListener('click', () => setRating(Number(btn.dataset.rating)));
+    });
+    setRating(5);
+
+    document.getElementById('testimonial_images').addEventListener('change', (event) => {
+      const preview = document.getElementById('image-preview');
+      preview.innerHTML = '';
+      Array.from(event.target.files).slice(0, 6).forEach((file) => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = file.name;
+        preview.appendChild(img);
+      });
+    });
+
+    async function fileToPayload(file) {
+      const resized = await resizeImageForSubmission(file);
+      return {
+        name: resized.name,
+        type: resized.type,
+        base64: resized.dataUrl.split(',')[1],
+      };
+    }
+
+    function resizeImageForSubmission(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const maxSide = 1400;
+            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * scale));
+            canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+            const baseName = file.name.replace(/\.[^.]+$/, '') || 'testimonial-photo';
+            resolve({
+              name: `${baseName}.jpg`,
+              type: 'image/jpeg',
+              dataUrl,
+            });
+          };
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById('testimonial-submit-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const status = document.getElementById('submit-status');
+      if (!form.reportValidity()) return;
+
+      status.textContent = 'Submitting...';
+      const files = Array.from(document.getElementById('testimonial_images').files).slice(0, 4);
+      const images = await Promise.all(files.map(fileToPayload));
+      const payload = {
+        customer_name: document.getElementById('customer_name').value.trim(),
+        customer_email: document.getElementById('customer_email').value.trim(),
+        customer_phone: document.getElementById('customer_phone').value.trim(),
+        rating: selectedRating,
+        subject: document.getElementById('subject').value.trim(),
+        content: document.getElementById('content').value.trim(),
+        images,
+      };
+
+      const { data, error } = await window.db.functions.invoke('testimonial-submission', { body: payload });
+      if (error) {
+        status.style.color = '#ef4444';
+        status.textContent = error.message || 'Sorry, something went wrong. Please email info@warmright.uk.';
+        return;
+      }
+
+      status.style.color = '#166534';
+      status.textContent = data?.emailWarning
+        ? `Thank you. Your testimonial has been saved for review, but the email notification needs checking: ${data.emailWarning}`
+        : 'Thank you. Your testimonial has been sent for review.';
+      form.reset();
+      document.getElementById('image-preview').innerHTML = '';
+      setRating(5);
+    });
+  </script>
+  <script src="assets/js/include.js"></script>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/main.js?v=10"></script>
+</body>
+</html>
