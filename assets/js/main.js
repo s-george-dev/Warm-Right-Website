@@ -59,15 +59,15 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ================================
       SLIDESHOW ROTATION
   ================================== */
-  const slides = document.querySelectorAll('.slide');
   let current = 0;
-  if (slides.length > 0) {
-    setInterval(() => {
-      slides[current].classList.remove('active');
-      current = (current + 1) % slides.length;
-      slides[current].classList.add('active');
-    }, 6000);
-  }
+  setInterval(() => {
+    const slides = Array.from(document.querySelectorAll('.hero .slide'));
+    if (slides.length < 2) return;
+    current = Math.min(current, slides.length - 1);
+    slides[current].classList.remove('active');
+    current = (current + 1) % slides.length;
+    slides[current].classList.add('active');
+  }, 6000);
 
   /* ================================
        CAROUSEL AUTO-SCROLL

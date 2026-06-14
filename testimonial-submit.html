@@ -46,35 +46,117 @@
     }
     .preview-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .photo-picker-actions {
+      display: flex;
       gap: 10px;
-      margin-top: 12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .photo-picker-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #d8e2ee;
+      background: #fff;
+      color: #123b75;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .preview-item {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
     }
     .preview-list img {
       width: 100%;
       aspect-ratio: 1;
       object-fit: cover;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
+      display: block;
+    }
+    .remove-photo {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(239, 68, 68, 0.94);
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 0;
     }
     .submit-status {
       margin-top: 16px;
       font-weight: 700;
       color: #0a2c66;
     }
+    .submit-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(6, 41, 64, 0.64);
+    }
+    .submit-overlay.active { display: flex; }
+    .submit-card {
+      width: min(460px, 100%);
+      background: #fff;
+      border-radius: 14px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+    }
+    .spinner {
+      width: 54px;
+      height: 54px;
+      border-radius: 999px;
+      border: 5px solid #dbeafe;
+      border-top-color: #123b75;
+      margin: 0 auto 16px;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 640px) {
+      .testimonial-submit-panel {
+        border-radius: 10px;
+        padding: 18px;
+      }
+      .rating-picker {
+        justify-content: space-between;
+      }
+      .rating-picker button {
+        width: 42px;
+        height: 42px;
+      }
+      .photo-picker-actions,
+      .photo-picker-btn,
+      form button[type="submit"] {
+        width: 100%;
+      }
+      .preview-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
   <header id="header"></header>
 
-  <section class="hero">
-    <div class="slide active" style="background-image:url('assets/images/testimonials.jpg');">
-      <div class="slide-content">
-        <h1>Send a Testimonial</h1>
-        <p>Tell us how we did and share photos from the visit if you would like to.</p>
-      </div>
-    </div>
-  </section>
+  <section class="hero managed-hero" data-managed-hero></section>
 
   <main class="container section">
     <h2 class="section-heading card">Share Your Experience</h2>
@@ -106,7 +188,13 @@
         <textarea id="content" name="content" rows="7" required maxlength="1800"></textarea>
 
         <label for="testimonial_images">Photos</label>
-        <input id="testimonial_images" name="testimonial_images" type="file" accept="image/*" multiple>
+        <p style="margin:0 0 8px;color:#64748b;font-size:14px;">You can add up to 4 photos.</p>
+        <input id="testimonial_images" name="testimonial_images" type="file" accept="image/*" multiple style="display:none;">
+        <input id="testimonial_camera" name="testimonial_camera" type="file" accept="image/*" capture="environment" style="display:none;">
+        <div class="photo-picker-actions">
+          <button type="button" class="photo-picker-btn" onclick="openPhotoPicker()">Choose Photos</button>
+          <button type="button" class="photo-picker-btn" onclick="openCameraPicker()">Take Photo</button>
+        </div>
         <div id="image-preview" class="preview-list"></div>
 
         <button type="submit" style="margin-top:18px;">Submit Testimonial</button>
@@ -116,6 +204,13 @@
   </main>
 
   <footer id="footer"></footer>
+  <div id="submit-overlay" class="submit-overlay" aria-live="polite" aria-hidden="true">
+    <div class="submit-card">
+      <div class="spinner"></div>
+      <h2 id="submit-overlay-title" style="margin:0 0 8px;color:#062940;">Submitting...</h2>
+      <p id="submit-overlay-message" style="margin:0;color:#475569;line-height:1.6;">Please wait while we send your feedback.</p>
+    </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.db = window.db || window.supabase.createClient(
@@ -123,6 +218,7 @@
       'sb_publishable_NFuFkO0tybTuMvYOQekQmA_62araOjM'
     );
     let selectedRating = 5;
+    let selectedPhotos = [];
 
     function setRating(value) {
       selectedRating = value;
@@ -137,15 +233,56 @@
     });
     setRating(5);
 
-    document.getElementById('testimonial_images').addEventListener('change', (event) => {
+    function openPhotoPicker() {
+      document.getElementById('testimonial_images').click();
+    }
+
+    function openCameraPicker() {
+      document.getElementById('testimonial_camera').click();
+    }
+
+    function addSelectedFiles(files) {
+      const incoming = Array.from(files || []).filter((file) => file.type.startsWith('image/'));
+      const remaining = Math.max(0, 4 - selectedPhotos.length);
+      if (incoming.length > remaining) {
+        alert('You can upload a maximum of 4 photos.');
+      }
+      selectedPhotos = selectedPhotos.concat(incoming.slice(0, remaining));
+      renderPhotoPreview();
+    }
+
+    function renderPhotoPreview() {
       const preview = document.getElementById('image-preview');
       preview.innerHTML = '';
-      Array.from(event.target.files).slice(0, 6).forEach((file) => {
+      selectedPhotos.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'preview-item';
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
         img.alt = file.name;
-        preview.appendChild(img);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'remove-photo';
+        remove.textContent = 'x';
+        remove.setAttribute('aria-label', `Remove ${file.name}`);
+        remove.onclick = () => {
+          selectedPhotos.splice(index, 1);
+          renderPhotoPreview();
+        };
+        item.appendChild(img);
+        item.appendChild(remove);
+        preview.appendChild(item);
       });
+    }
+
+    document.getElementById('testimonial_images').addEventListener('change', (event) => {
+      addSelectedFiles(event.target.files);
+      event.target.value = '';
+    });
+
+    document.getElementById('testimonial_camera').addEventListener('change', (event) => {
+      addSelectedFiles(event.target.files);
+      event.target.value = '';
     });
 
     async function fileToPayload(file) {
@@ -192,9 +329,18 @@
       const status = document.getElementById('submit-status');
       if (!form.reportValidity()) return;
 
+      const overlay = document.getElementById('submit-overlay');
+      const overlayMessage = document.getElementById('submit-overlay-message');
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+      overlayMessage.textContent = selectedPhotos.length
+        ? 'Thank you for your images. It may take a little longer to submit. Thank you for your patience.'
+        : 'Please wait while we send your feedback.';
+      status.style.color = '#0a2c66';
       status.textContent = 'Submitting...';
-      const files = Array.from(document.getElementById('testimonial_images').files).slice(0, 4);
-      const images = await Promise.all(files.map(fileToPayload));
+      const submitButton = form.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      const images = await Promise.all(selectedPhotos.map(fileToPayload));
       const payload = {
         customer_name: document.getElementById('customer_name').value.trim(),
         customer_email: document.getElementById('customer_email').value.trim(),
@@ -205,20 +351,27 @@
         images,
       };
 
-      const { data, error } = await window.db.functions.invoke('testimonial-submission', { body: payload });
+      const { error } = await window.db.functions.invoke('testimonial-submission', { body: payload });
       if (error) {
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+        submitButton.disabled = false;
         status.style.color = '#ef4444';
         status.textContent = error.message || 'Sorry, something went wrong. Please email info@warmright.uk.';
         return;
       }
 
       status.style.color = '#166534';
-      status.textContent = data?.emailWarning
-        ? `Thank you. Your testimonial has been saved for review, but the email notification needs checking: ${data.emailWarning}`
-        : 'Thank you. Your testimonial has been sent for review.';
+      status.textContent = 'Thank you for your feedback.';
       form.reset();
+      selectedPhotos = [];
       document.getElementById('image-preview').innerHTML = '';
       setRating(5);
+      document.getElementById('submit-overlay-title').textContent = 'Thank you';
+      overlayMessage.textContent = 'Thank you for your feedback.';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1500);
     });
   </script>
   <script src="assets/js/include.js"></script>

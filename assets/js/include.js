@@ -41,7 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   Promise.all([
     initPublicDatabase(),
-    loadScriptOnce(siteRoot + "assets/js/site-management-public.js?v=3"),
+    loadScriptOnce(siteRoot + "assets/js/site-management-public.js?v=4"),
+    loadScriptOnce(siteRoot + "assets/js/hero-management-public.js?v=7"),
+    loadScriptOnce(siteRoot + "assets/js/content-cards.js?v=6"),
     loadHTML("header", partialsPath + "header.html"),
     loadHTML("footer", partialsPath + "footer.html")
   ]).then(() => {

@@ -173,6 +173,10 @@
   background: none;
 }
 
+.carousel-container[data-carousel-key]:not(.is-carousel-ready) .carousel-track {
+  visibility: hidden;
+}
+
 .carousel-track::-webkit-scrollbar {
   display: none;
 }

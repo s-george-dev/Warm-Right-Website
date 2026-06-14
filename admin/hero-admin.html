@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarmHub - Hero Pictures | Warm Right Ltd</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css?v=20260614c">
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/hero.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.adminPageTitle = "WarmHub - Hero Pictures";</script>
+  <script src="../assets/js/admin-include.js?v=20260614c"></script>
+  <style>
+    body { font-family:'Segoe UI', sans-serif; background:#f4f7f6; margin:0; padding:40px; visibility:hidden; color:#263238; }
+    #admin-header-container { margin:-40px -40px 30px -40px; }
+    .container { max-width:1500px; margin:0 auto; }
+    .panel { background:#fff; border-radius:12px; padding:24px; box-shadow:0 4px 8px rgba(0,0,0,.05); margin-bottom:24px; }
+    .toolbar { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+    .toolbar-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    h2, h3 { color:#004a99; margin:0; }
+    .hint, .status { color:#667085; font-size:14px; }
+    table { width:100%; border-collapse:collapse; margin-top:14px; }
+    th { text-align:left; color:#004a99; background:#f9fafb; border-bottom:2px solid #e5e7eb; padding:12px; }
+    td { border-bottom:1px solid #e5e7eb; padding:12px; vertical-align:top; }
+    label { display:block; font-weight:700; margin:14px 0 6px; }
+    input, textarea, select, button { font-family:'Segoe UI', sans-serif; }
+    input, textarea, select { width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:6px; padding:10px; font-size:15px; }
+    textarea { min-height:90px; resize:vertical; }
+    input[type="checkbox"], input[type="range"] { width:auto; }
+    input[type="range"] { width:100%; }
+    button { padding:10px 16px; border:0; border-radius:6px; font-weight:700; cursor:pointer; }
+    .btn-primary { background:#004a99; color:#fff; }
+    .btn-accent { background:#ff8c00; color:#fff; }
+    .btn-outline { background:#fff; color:#004a99; border:1px solid #e5e7eb; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .view-hidden { display:none !important; }
+    .layout { display:grid; grid-template-columns:1fr; gap:24px; align-items:start; }
+    .slider-label { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .slider-label output { color:#667085; font-weight:600; }
+    .preview-panel { position:relative; }
+    .preview-frame { background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:18px; margin-top:16px; overflow:auto; position:relative; }
+    .preview-frame-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; color:#004a99; font-weight:800; }
+    .hero-preview-desktop { width:100%; height:500px; padding:0; margin:0; position:relative; }
+    .hero-preview-mobile { width:390px; max-width:100%; height:420px; padding:0; margin:0 auto; }
+    .preview-frame .hero { position:relative; top:0; height:100%; padding:0; border-radius:0; overflow:hidden; }
+    .preview-frame .slide { opacity:1; background-repeat:no-repeat; background-color:#111827; }
+    .preview-frame .slide-content { padding:10px; padding-top:110px; }
+    .hero-preview-mobile .slide {
+      top:0;
+      border-radius:0;
+      transform:none;
+      background-position: var(--hero-mobile-image-position, var(--hero-image-position, center));
+      background-size: var(--hero-mobile-image-size, var(--hero-image-size, cover));
+      background-repeat:no-repeat;
+    }
+    .hero-preview-mobile .slide.active { transform:none; }
+    .hero-preview-mobile .slide-content { padding:90px 22px 34px; }
+    .preview-image-click {
+      position:absolute;
+      inset:0;
+      z-index:4;
+      border:0;
+      background:transparent;
+      cursor:crosshair;
+      padding:0;
+    }
+    .hero-preview-mobile { position:relative; }
+    .crop-popover {
+      position:absolute;
+      z-index:20;
+      width:min(340px, calc(100vw - 48px));
+      padding:16px;
+      border:1px solid #dbe2ea;
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 18px 45px rgba(15,23,42,.22);
+    }
+    .crop-popover[hidden] { display:none; }
+    .crop-popover-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; color:#004a99; font-weight:800; }
+    .crop-popover .btn-outline { padding:6px 10px; }
+    .image-browser { display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center; background:rgba(12,22,40,.72); }
+    .image-browser.open { display:flex; }
+    .image-panel { width:min(1000px,92vw); max-height:86vh; overflow:auto; background:#fff; border-radius:12px; padding:24px; }
+    .image-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px; }
+    .image-choice { border:1px solid #e5e7eb; border-radius:8px; background:#fff; padding:8px; text-align:left; }
+    .image-choice img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; background:#f3f4f6; }
+    .image-choice span { display:block; margin-top:6px; font-size:12px; word-break:break-word; color:#444; }
+    @media (max-width:1000px) { body{padding:75px 14px 20px!important;} #admin-header-container{margin:0 -14px 20px!important;} .layout{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+  <main class="container">
+    <section id="list-view" class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Hero Pictures</h2>
+          <p class="hint">Manage the top hero image, text, crop, active state, and optional click-through link for deployed pages.</p>
+        </div>
+        <div class="toolbar-controls">
+          <select id="page-filter" onchange="renderHeroes()"></select>
+          <button class="btn-outline" onclick="showEditorForNew()">Add Hero</button>
+          <button class="btn-accent" onclick="seedHeroes()">Seed From Live Pages</button>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+      <table>
+        <thead><tr><th>Hero</th><th>Page</th><th>Image</th><th>Link</th><th>Active</th><th></th></tr></thead>
+        <tbody id="heroes-body"></tbody>
+      </table>
+    </section>
+
+    <section id="editor-view" class="layout view-hidden">
+      <div class="panel">
+        <div class="toolbar">
+          <h2 id="form-title">Edit Hero</h2>
+          <button class="btn-outline" onclick="showListView()">Back to Hero Pictures</button>
+        </div>
+        <label>Page</label>
+        <select id="page_key" onchange="newHero(this.value)"></select>
+        <label>Hero key</label>
+        <input id="hero_key" placeholder="hero-1">
+        <label>Order</label>
+        <input id="sort_order" type="number" min="0" step="1" value="0">
+        <label>Hero title</label>
+        <input id="title" placeholder="24/7 Support">
+        <label>Subtitle</label>
+        <textarea id="subtitle" placeholder="Short supporting line under the title."></textarea>
+        <label>Image URL</label>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:10px;">
+          <input id="image_url" placeholder="assets/images/home-hero.jpg">
+          <button class="btn-outline" onclick="openImageBrowser()">Choose</button>
+        </div>
+        <label>Clickable link URL</label>
+        <input id="link_url" placeholder="book-a-visit.html">
+        <label>Link label</label>
+        <input id="link_label" placeholder="Book a visit">
+        <label style="display:flex; gap:8px; align-items:center;"><input id="is_active" type="checkbox" checked> Show this hero on the website</label>
+
+        <p class="hint">Click either preview image to adjust desktop or mobile crop live.</p>
+        <div class="actions">
+          <button class="btn-primary" onclick="saveHero()">Save Hero</button>
+          <button class="btn-outline" onclick="deleteHero()">Delete Hero</button>
+          <button class="btn-outline" onclick="showListView()">Cancel</button>
+        </div>
+      </div>
+
+      <aside class="panel preview-panel">
+        <h3>Live Preview</h3>
+        <p class="hint">Click a preview to open image X/Y and Zoom controls at the selected spot. Desktop is shown at real page width.</p>
+        <div class="preview-frame">
+          <div class="preview-frame-title"><span>Desktop preview</span><span>full width</span></div>
+          <div class="hero-preview-desktop">
+            <section id="desktop-preview" class="hero"><div class="slide active"><div class="slide-content"></div></div></section>
+            <button class="preview-image-click" type="button" onclick="openCropPopover('desktop', event)" aria-label="Adjust desktop hero crop"></button>
+          </div>
+        </div>
+        <div class="preview-frame">
+          <div class="preview-frame-title"><span>Mobile preview</span><span>390px</span></div>
+          <div class="hero-preview-mobile">
+            <section id="mobile-preview" class="hero"><div class="slide active"><div class="slide-content"></div></div></section>
+            <button class="preview-image-click" type="button" onclick="openCropPopover('mobile', event)" aria-label="Adjust mobile hero crop"></button>
+          </div>
+        </div>
+
+        <div id="desktop-crop-popover" class="crop-popover" hidden>
+          <div class="crop-popover-head">
+            <span>Desktop image crop</span>
+            <button class="btn-outline" type="button" onclick="closeCropPopovers()">Close</button>
+          </div>
+          <label><span class="slider-label">Desktop X <output id="image_position_x_value">50%</output></span><input id="image_position_x" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Desktop Y <output id="image_position_y_value">50%</output></span><input id="image_position_y" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Desktop Zoom <output id="image_zoom_value">100%</output></span><input id="image_zoom" type="range" min="100" max="200" value="100" oninput="updatePreview()"></label>
+        </div>
+
+        <div id="mobile-crop-popover" class="crop-popover" hidden>
+          <div class="crop-popover-head">
+            <span>Mobile image crop</span>
+            <button class="btn-outline" type="button" onclick="closeCropPopovers()">Close</button>
+          </div>
+          <label><span class="slider-label">Mobile X <output id="mobile_image_position_x_value">50%</output></span><input id="mobile_image_position_x" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Mobile Y <output id="mobile_image_position_y_value">50%</output></span><input id="mobile_image_position_y" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Mobile Zoom <output id="mobile_image_zoom_value">100%</output></span><input id="mobile_image_zoom" type="range" min="100" max="200" value="100" oninput="updatePreview()"></label>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="image-browser" class="image-browser" onclick="if(event.target === this) closeImageBrowser()">
+    <div class="image-panel">
+      <div class="toolbar">
+        <h2>Choose Image</h2>
+        <div style="display:flex; gap:10px;">
+          <input id="image-search" type="search" placeholder="Search images..." oninput="renderImageBrowser()">
+          <button class="btn-outline" onclick="closeImageBrowser()">Close</button>
+        </div>
+      </div>
+      <div id="image-status" class="status">Loading images...</div>
+      <div id="image-grid" class="image-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+    const GITHUB_IMAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/github-images`;
+    const DEPLOYED_PAGES = [
+      { key:'home', title:'Home', url:'../index.html' },
+      { key:'about', title:'About Us', url:'../about.html' },
+      { key:'breakdowns', title:'Breakdowns', url:'../services/breakdowns.html', group:'Services' },
+      { key:'repairs', title:'Repairs', url:'../services/repairs.html', group:'Services' },
+      { key:'annual-servicing', title:'Annual Servicing', url:'../services/annual-servicing.html', group:'Services' },
+      { key:'landlords-certificates', title:'Landlords Certificates', url:'../services/landlords-certificates.html', group:'Services' },
+      { key:'boiler-installation', title:'Boiler Installations', url:'../services/boiler-installation.html', group:'Services' },
+      { key:'general-maintenance', title:'Plumbing', url:'../services/general-maintenance.html', group:'Services' },
+      { key:'kitchens-bathrooms', title:'Kitchens and Bathrooms', url:'../services/kitchens-bathrooms.html', group:'Services' },
+      { key:'powerflushing-descaling', title:'Powerflushing and Descaling', url:'../services/powerflushing-descaling.html', group:'Services' },
+      { key:'second-opinion', title:'Second Opinions', url:'../services/second-opinion.html', group:'Services' },
+      { key:'unvented-cylinders', title:'Unvented Cylinders', url:'../services/unvented-cylinders.html', group:'Services' },
+      { key:'common-faults', title:'Common Faults', url:'../support/common-faults.html', group:'Support' },
+      { key:'boiler-fault-codes', title:'Boiler Fault Codes', url:'../support/boiler-fault-codes.html', group:'Support' },
+      { key:'manuals', title:'Manuals', url:'../support/manuals.html', group:'Support' },
+      { key:'offers', title:'Offers', url:'../offers.html' },
+      { key:'schedule-of-rates', title:'Our Rates', url:'../schedule-of-rates.html' },
+      { key:'book-a-visit', title:'Book A Visit', url:'../book-a-visit.html' },
+      { key:'contact', title:'Contact Us', url:'../contact.html' },
+      { key:'testimonals', title:'Testimonials', url:'../testimonals.html' },
+      { key:'testimonial-submit', title:'Submit Testimonial', url:'../testimonial-submit.html' }
+    ];
+    let currentSession = null;
+    let editingId = null;
+    let heroes = [];
+    let imageFiles = [];
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib) { setTimeout(checkSecurity, 50); return; }
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+      currentSession = session;
+      await window.loadAdminHeader(session);
+      setupPageControls();
+      document.body.style.visibility = 'visible';
+      await loadHeroes();
+      newHero(document.getElementById('page_key').value);
+      showListView();
+    }
+
+    function showListView() {
+      closeCropPopovers();
+      document.getElementById('list-view').classList.remove('view-hidden');
+      document.getElementById('editor-view').classList.add('view-hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showEditorView() {
+      document.getElementById('list-view').classList.add('view-hidden');
+      document.getElementById('editor-view').classList.remove('view-hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showEditorForNew() {
+      newHero();
+      showEditorView();
+    }
+
+    function setupPageControls() {
+      const options = DEPLOYED_PAGES.map(page => `<option value="${escapeHtml(page.key)}">${escapeHtml(page.group ? `${page.group}: ${page.title}` : page.title)}</option>`).join('');
+      document.getElementById('page_key').innerHTML = options;
+      document.getElementById('page-filter').innerHTML = `<option value="">All deployed pages</option>${options}`;
+    }
+
+    async function loadHeroes() {
+      const { data, error } = await window.db.from('site_heroes').select('*').order('page_key').order('sort_order');
+      if (error) return setStatus(error.message);
+      heroes = data || [];
+      renderHeroes();
+    }
+
+    function renderHeroes() {
+      const filter = document.getElementById('page-filter').value;
+      const rows = (filter ? heroes.filter(row => row.page_key === filter) : heroes);
+      document.getElementById('heroes-body').innerHTML = rows.map(hero => `
+        <tr>
+          <td><strong>${escapeHtml(hero.title || hero.hero_key)}</strong><br><small>${escapeHtml(hero.hero_key || 'hero')}</small></td>
+          <td><strong>${escapeHtml(pageTitle(hero.page_key))}</strong><br><small>${escapeHtml(hero.page_key)}</small></td>
+          <td><img src="${imageSrcForAdmin(hero.image_url)}" style="width:96px;height:54px;object-fit:cover;border-radius:6px;" onerror="this.src='../assets/images/no-image.jpg'"></td>
+          <td>${hero.link_url ? escapeHtml(hero.link_url) : '-'}</td>
+          <td>${hero.is_active ? 'Yes' : 'No'}</td>
+          <td><button class="btn-outline" onclick="editHero('${hero.id}')">Edit</button></td>
+        </tr>
+      `).join('') || '<tr><td colspan="6">No hero records found yet. Use Seed From Live Pages or Add Hero.</td></tr>';
+    }
+
+    function editHero(id) {
+      const hero = heroes.find(item => item.id === id);
+      if (!hero) return;
+      editingId = id;
+      const page = DEPLOYED_PAGES.find(item => item.key === hero.page_key) || DEPLOYED_PAGES[0];
+      document.getElementById('page_key').value = page.key;
+      document.getElementById('form-title').textContent = `Editing: ${page.title} - ${hero.title || hero.hero_key}`;
+      for (const key of ['hero_key','sort_order','title','subtitle','image_url','link_url','link_label','image_position_x','image_position_y','image_zoom','mobile_image_position_x','mobile_image_position_y','mobile_image_zoom']) {
+        document.getElementById(key).value = hero[key] ?? '';
+      }
+      document.getElementById('is_active').checked = hero.is_active !== false;
+      updatePreview();
+      showEditorView();
+    }
+
+    function newHero(pageKey = document.getElementById('page_key').value) {
+      editingId = null;
+      const page = DEPLOYED_PAGES.find(item => item.key === pageKey) || DEPLOYED_PAGES[0];
+      const pageHeroes = heroes.filter(hero => hero.page_key === page.key);
+      const hero = defaultHero(page, pageHeroes.length);
+      document.getElementById('page_key').value = page.key;
+      document.getElementById('form-title').textContent = `New Hero: ${page.title}`;
+      for (const key of ['hero_key','sort_order','title','subtitle','image_url','link_url','link_label','image_position_x','image_position_y','image_zoom','mobile_image_position_x','mobile_image_position_y','mobile_image_zoom']) {
+        document.getElementById(key).value = hero[key] ?? '';
+      }
+      document.getElementById('is_active').checked = true;
+      updatePreview();
+    }
+
+    async function saveHero() {
+      const pageKey = document.getElementById('page_key').value;
+      const payload = {
+        page_key: pageKey,
+        hero_key: document.getElementById('hero_key').value.trim() || 'hero-1',
+        sort_order: Number(document.getElementById('sort_order').value || 0),
+        title: document.getElementById('title').value.trim(),
+        subtitle: document.getElementById('subtitle').value.trim(),
+        image_url: document.getElementById('image_url').value.trim(),
+        image_position_x: Number(document.getElementById('image_position_x').value),
+        image_position_y: Number(document.getElementById('image_position_y').value),
+        image_zoom: Number(document.getElementById('image_zoom').value),
+        mobile_image_position_x: Number(document.getElementById('mobile_image_position_x').value),
+        mobile_image_position_y: Number(document.getElementById('mobile_image_position_y').value),
+        mobile_image_zoom: Number(document.getElementById('mobile_image_zoom').value),
+        link_url: document.getElementById('link_url').value.trim(),
+        link_label: document.getElementById('link_label').value.trim(),
+        is_active: document.getElementById('is_active').checked,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = editingId
+        ? await window.db.from('site_heroes').update(payload).eq('id', editingId)
+        : await window.db.from('site_heroes').upsert([payload], { onConflict: 'page_key,hero_key' });
+      if (error) alert(error.message);
+      else { await loadHeroes(); setStatus('Hero saved.'); showListView(); }
+    }
+
+    async function deleteHero() {
+      if (!editingId || !confirm('Delete this hero slide?')) return;
+      const { error } = await window.db.from('site_heroes').delete().eq('id', editingId);
+      if (error) alert(error.message);
+      else { editingId = null; await loadHeroes(); newHero(); setStatus('Hero deleted.'); showListView(); }
+    }
+
+    async function seedHeroes() {
+      setStatus('Reading live page heroes...');
+      const rows = [];
+      for (const page of DEPLOYED_PAGES) rows.push(...await readHeroesFromPage(page));
+      const { data: existing, error: existingError } = await window.db
+        .from('site_heroes')
+        .select('page_key,hero_key')
+        .in('page_key', rows.map(row => row.page_key));
+      if (existingError) return alert(existingError.message);
+
+      const existingKeys = new Set((existing || []).map(row => `${row.page_key}:${row.hero_key}`));
+      const missingRows = rows.filter(row => !existingKeys.has(`${row.page_key}:${row.hero_key}`));
+
+      if (missingRows.length) {
+        const { error } = await window.db.from('site_heroes').insert(missingRows);
+        if (error) return alert(error.message);
+      }
+
+      await loadHeroes();
+      setStatus(`${missingRows.length} hero slide${missingRows.length === 1 ? '' : 's'} seeded. Existing hero slides were left alone.`);
+    }
+
+    async function readHeroesFromPage(page) {
+      try {
+        const response = await fetch(page.url, { cache:'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const slides = Array.from(doc.querySelectorAll('.hero .slide'));
+        if (!slides.length) return [defaultHero(page, 0)];
+        return slides.map((slide, index) => {
+          const content = slide.querySelector('.slide-content');
+          const styleImage = slide.getAttribute('style')?.match(/url\(['"]?([^'")]+)['"]?\)/i)?.[1] || defaultHero(page, index).image_url;
+          return {
+          ...defaultHero(page, index),
+          title: content?.querySelector('h1')?.textContent.trim() || page.title,
+          subtitle: content?.querySelector('p')?.textContent.trim() || '',
+          image_url: styleImage.replace(/^\.\.\//, 'assets/').replace(/^assets\/assets\//, 'assets/'),
+          link_url: content?.getAttribute('href') || '',
+          link_label: content?.querySelector('h1')?.textContent.trim() || page.title,
+          is_active: true
+          };
+        });
+      } catch (err) {
+        console.warn(`Could not seed hero from ${page.url}`, err);
+        return [defaultHero(page, 0)];
+      }
+    }
+
+    function defaultHero(page, index = 0) {
+      const defaults = {
+        home: { title:'Welcome to Warm Right', subtitle:'Reliable heating & plumbing across Kent, South East London & East Sussex.', image_url:'assets/images/home-hero.jpg' },
+        about: { title:'About Warm Right', subtitle:'Family-run heating and plumbing support with clear advice and safe workmanship.', image_url:'assets/images/values.png' },
+        breakdowns: { title:'Boiler Breakdowns', subtitle:'Fast, practical support when your heating or hot water stops working.', image_url:'assets/images/breakdowns.jpg' },
+        repairs: { title:'Boiler Repairs', subtitle:'Straightforward repairs and clear advice from Gas Safe registered engineers.', image_url:'assets/images/boiler-repair-hero.jpg' },
+        'annual-servicing': { title:'Annual Servicing', subtitle:'Keep your boiler running safely, efficiently, and reliably.', image_url:'assets/images/annual-servicing.jpg' },
+        'landlords-certificates': { title:'Landlord Certificates', subtitle:'Gas safety certificates and landlord support without the fuss.', image_url:'assets/images/landlord-cp12.jpg' },
+        'boiler-installation': { title:'Boiler Installations', subtitle:'Helping you choose and fit the right heating system for your home.', image_url:'assets/images/install-hero.jpg' },
+        'general-maintenance': { title:'Plumbing', subtitle:'Reliable plumbing help for everyday problems and planned improvements.', image_url:'assets/images/plumbing.jpg' },
+        'kitchens-bathrooms': { title:'Kitchens and Bathrooms', subtitle:'Practical heating and plumbing support for kitchen and bathroom projects.', image_url:'assets/images/kitchen-bathrooms.jpg' },
+        'powerflushing-descaling': { title:'Powerflushing and Descaling', subtitle:'Improve flow, efficiency, and system performance.', image_url:'assets/images/powerflushing.jpg' },
+        'second-opinion': { title:'Second Opinions', subtitle:'Clear, independent advice before you commit to expensive work.', image_url:'assets/images/second-opinion.jpg' },
+        'unvented-cylinders': { title:'Unvented Cylinders', subtitle:'High-pressure hot water systems installed and maintained safely.', image_url:'assets/images/unvented-cylinders.jpg' },
+        'common-faults': { title:'Common Faults', subtitle:'Simple guidance for common heating and hot water problems.', image_url:'assets/images/common-faults.jpg' },
+        'boiler-fault-codes': { title:'Boiler Fault Codes', subtitle:'Find out what your boiler is trying to tell you.', image_url:'assets/images/fault-boiler.gif' },
+        manuals: { title:'Boiler Manuals', subtitle:'Find manuals for common boiler brands or ask us for help.', image_url:'assets/images/manuals-hero.png' },
+        offers: { title:'Offers', subtitle:'Current Warm Right offers and packages.', image_url:'assets/images/offers.png' },
+        'schedule-of-rates': { title:'Our Rates', subtitle:'Clear prices for common heating and plumbing visits.', image_url:'assets/images/boiler-repair.jpg' },
+        'book-a-visit': { title:'Book A Visit', subtitle:'Book a visit with one of our expert engineers through our online booking page.', image_url:'assets/images/book-2.png' },
+        contact: { title:'Contact Us', subtitle:'Choose how you would like to contact the Warm Right team.', image_url:'assets/images/contact.jpg' },
+        testimonals: { title:'Customer Testimonials', subtitle:'See what our customers have to say about Warm Right.', image_url:'assets/images/testimonials.jpg' },
+        'testimonial-submit': { title:'Send A Testimonial', subtitle:'Share your feedback and photos from your Warm Right visit.', image_url:'assets/images/testimonials.jpg' }
+      };
+      const defaultValues = defaults[page.key] || {};
+      return {
+        page_key: page.key,
+        hero_key: `hero-${index + 1}`,
+        sort_order: index,
+        title: defaultValues.title || page.title,
+        subtitle: defaultValues.subtitle || '',
+        image_url: defaultValues.image_url || 'assets/images/home-hero.jpg',
+        image_position_x: 50,
+        image_position_y: 50,
+        image_zoom: 100,
+        mobile_image_position_x: 50,
+        mobile_image_position_y: 50,
+        mobile_image_zoom: 100,
+        link_url: '',
+        link_label: '',
+        is_active: true
+      };
+    }
+
+    function updatePreview() {
+      const image = document.getElementById('image_url').value.trim() || 'assets/images/home-hero.jpg';
+      const x = document.getElementById('image_position_x').value;
+      const y = document.getElementById('image_position_y').value;
+      const zoom = document.getElementById('image_zoom').value;
+      const mobileX = document.getElementById('mobile_image_position_x').value;
+      const mobileY = document.getElementById('mobile_image_position_y').value;
+      const mobileZoom = document.getElementById('mobile_image_zoom').value;
+      for (const mode of ['desktop','mobile']) {
+        const hero = document.getElementById(`${mode}-preview`);
+        const slide = hero.querySelector('.slide');
+        slide.style.backgroundImage = `url("${imageUrlForCss(image).replace(/"/g, '\\"')}")`;
+        slide.style.backgroundRepeat = 'no-repeat';
+        slide.style.setProperty('--hero-image-position', `${x}% ${y}%`);
+        slide.style.setProperty('--hero-image-size', `${zoom}%`);
+        slide.style.setProperty('--hero-mobile-image-position', `${mobileX}% ${mobileY}%`);
+        slide.style.setProperty('--hero-mobile-image-size', `${mobileZoom}%`);
+        hero.querySelector('.slide-content').innerHTML = `<h1>${escapeHtml(document.getElementById('title').value || 'Hero title')}</h1><p>${escapeHtml(document.getElementById('subtitle').value || 'Hero subtitle')}</p>`;
+        hero.classList.toggle('is-clickable', Boolean(document.getElementById('link_url').value.trim()));
+      }
+      for (const id of ['image_position_x','image_position_y','image_zoom','mobile_image_position_x','mobile_image_position_y','mobile_image_zoom']) {
+        document.getElementById(`${id}_value`).textContent = `${document.getElementById(id).value}%`;
+      }
+    }
+
+    function openCropPopover(mode, event) {
+      event?.stopPropagation();
+      const popover = document.getElementById(`${mode}-crop-popover`);
+      const other = document.getElementById(mode === 'desktop' ? 'mobile-crop-popover' : 'desktop-crop-popover');
+      if (other) other.hidden = true;
+      if (!popover) return;
+
+      const panel = document.querySelector('.preview-panel');
+      const panelRect = panel.getBoundingClientRect();
+      popover.hidden = false;
+
+      const clickX = event?.clientX ?? panelRect.left + 24;
+      const clickY = event?.clientY ?? panelRect.top + 24;
+      const maxTop = Math.max(12, panel.clientHeight - popover.offsetHeight - 12);
+      const maxLeft = Math.max(12, panel.clientWidth - popover.offsetWidth - 12);
+      const top = Math.min(Math.max(clickY - panelRect.top + 12, 12), maxTop);
+      const left = Math.min(Math.max(clickX - panelRect.left + 12, 12), maxLeft);
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+    }
+
+    function closeCropPopovers() {
+      document.getElementById('desktop-crop-popover').hidden = true;
+      document.getElementById('mobile-crop-popover').hidden = true;
+    }
+
+    document.addEventListener('click', event => {
+      if (
+        event.target.closest('.crop-popover') ||
+        event.target.closest('.preview-image-click')
+      ) return;
+      closeCropPopovers();
+    });
+
+    async function openImageBrowser() {
+      document.getElementById('image-browser').classList.add('open');
+      document.getElementById('image-status').textContent = 'Loading images...';
+      try {
+        const data = await callImageFunction('list');
+        imageFiles = (data.files || []).sort((a, b) => a.name.localeCompare(b.name));
+        renderImageBrowser();
+      } catch (err) {
+        document.getElementById('image-status').textContent = err.message;
+      }
+    }
+    function closeImageBrowser() { document.getElementById('image-browser').classList.remove('open'); }
+    function renderImageBrowser() {
+      const query = document.getElementById('image-search').value.trim().toLowerCase();
+      const files = imageFiles.filter(file => file.name.toLowerCase().includes(query));
+      document.getElementById('image-status').textContent = `${files.length} image${files.length === 1 ? '' : 's'} found.`;
+      document.getElementById('image-grid').innerHTML = files.map(file => `
+        <button class="image-choice" onclick="chooseImage('${encodeURIComponent(file.webPath || `assets/images/${file.name}`)}')">
+          <img src="${escapeHtml(file.downloadUrl || imageSrcForAdmin(file.webPath))}" alt="${escapeHtml(file.name)}">
+          <span>${escapeHtml(file.name)}</span>
+        </button>
+      `).join('');
+    }
+    function chooseImage(path) {
+      document.getElementById('image_url').value = decodeURIComponent(path);
+      closeImageBrowser();
+      updatePreview();
+    }
+    async function callImageFunction(action) {
+      const response = await fetch(`${GITHUB_IMAGES_FUNCTION}?action=${encodeURIComponent(action)}`, {
+        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
+      return data;
+    }
+    function pageTitle(key) { return DEPLOYED_PAGES.find(page => page.key === key)?.title || key; }
+    function imageSrcForAdmin(path) {
+      if (!path) return '../assets/images/no-image.jpg';
+      if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      return path.startsWith('../') ? path : `../${path.replace(/^\/+/, '')}`;
+    }
+    function imageUrlForCss(path) {
+      if (!path) return '/assets/images/home-hero.jpg';
+      if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      return '/' + path.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    }
+    function setStatus(message) { document.getElementById('status').textContent = message; }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
+    ['title','subtitle','image_url','link_url'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+    checkSecurity();
+  </script>
+</body>
+</html>

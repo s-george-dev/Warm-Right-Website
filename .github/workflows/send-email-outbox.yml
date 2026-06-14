@@ -28,5 +28,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
           EMAIL_OUTBOX_BATCH_SIZE: "10"
         run: python3 scripts/send_email_outbox.py

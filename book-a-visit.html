@@ -19,44 +19,12 @@
 <body>
   <header id="header"></header> 
   
-  <section class="hero">
-  <!-- Slide 1 -->
-  <div class="slide active" style="background-image:url('assets/images/book-2.png');">
-    <a class="slide-content">
-      <h1>Book Your Visit Today</h1>
-      <p>Fast, simple, and reliable — schedule your appointment in just a few clicks.</p>
-    </a>
-  </div>
-
-  <!-- Slide 2 -->
-  <div class="slide" style="background-image:url('assets/images/engineers.jpg');">
-    <a class="slide-content">
-      <h1>Expert Engineers</h1>
-      <p>Gas Safe and OFTEC registered professionals ready to help with heating and plumbing.</p>
-    </a>
-  </div>
-
-  <!-- Slide 3 -->
-  <div class="slide" style="background-image:url('assets/images/support.jpg');">
-    <a class="slide-content">
-      <h1>Here When You Need Us</h1>
-      <p>Emergency support available 24/7 — dependable service, day or night.</p>
-    </a>
-  </div>
-
-  <!-- Slide 4 -->
-<div class="slide" style="background-image:url('assets/images/online-booking.png');">
-  <a class="slide-content callback-direct">
-    <h1>Request a Callback</h1>
-    <p>Leave your details and we’ll call you back at a time that suits you.</p>
-  </a>
-</div>
-</section>
+  <section class="hero managed-hero" data-managed-hero></section>
 
   <main class="container section">
 
     <h2 class="section-heading">How would you like to book?</h2>
-    <p class="article-gap">Choose the option that suits you best — whether you’d like to call us, book online, or request a callback.</p>
+    <p class="article-gap card" data-content-card="book-a-visit:card-1"></p>
 
     <!-- Booking Options -->
     <section class="tile-grid">
@@ -96,7 +64,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="assets/js/include.js"></script>
-<script src="assets/js/main.js"></script>
+<script src="assets/js/main.js?v=10"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/contact-actions.js?v=2"></script>
 

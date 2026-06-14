@@ -184,15 +184,26 @@
       if (activeTiles.length === 0) {
         const section = container.closest('section');
         if (section) section.style.display = 'none';
+        container.classList.add('is-carousel-ready');
         return;
       }
 
       track.replaceChildren(...activeTiles.map(createTile));
+      container.classList.add('is-carousel-ready');
+    });
+  }
+
+  function markCarouselsReady() {
+    document.querySelectorAll('.carousel-container[data-carousel-key]').forEach(container => {
+      container.classList.add('is-carousel-ready');
     });
   }
 
   async function loadSiteManagement() {
-    if (!window.db) return;
+    if (!window.db) {
+      markCarouselsReady();
+      return;
+    }
 
     try {
       const [{ data: pages, error: pageError }, { data: tiles, error: tileError }] = await Promise.all([
@@ -202,8 +213,10 @@
 
       if (!pageError && pages?.length) applyPageVisibility(pages);
       if (!tileError && tiles?.length) applyCarouselTiles(tiles);
+      if (tileError || !tiles?.length) markCarouselsReady();
     } catch (err) {
       console.warn('Site management data unavailable; using static content.', err);
+      markCarouselsReady();
     }
   }
 

@@ -6,11 +6,11 @@
   <title>Admin Dashboard | Warm Right Ltd</title>
   <link rel="icon" href="../assets/images/favicon.png">
   <link rel="manifest" href="../manifest.json">
-  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin.css?v=20260614c">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <script>window.adminPageTitle = "WarmHub";</script>
-  <script src="../assets/js/admin-include.js"></script>
+  <script src="../assets/js/admin-include.js?v=20260614c"></script>
 
   <style>
     /* 1. Hide the body by default to prevent "peeking" */
@@ -27,39 +27,24 @@
       margin: -40px -40px 30px -40px; 
     }
 
-    /* Tab Interface Styling */
-    .tab-buttons {
-     display: flex !important;
-        flex-wrap: nowrap !important; /* Absolutely prevents wrapping */
-        overflow-x: auto !important;  /* Enables scrolling */
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
-        justify-content: flex-start !important;
-        padding-bottom: 2px !important;
-        width: 100% !important;
+    .tabs-wrapper {
+      margin: -30px -40px 30px -40px;
     }
-    
+
     .tab-btn {
-      background: none;
-      border: none;
-      padding: 12px 24px;
-      font-size: 15px;
-      font-weight: 600;
-      color: #666;
-      cursor: pointer;
-      border-radius: 8px 8px 0 0;
-      transition: all 0.2s ease;
+      color: #333 !important;
+      font-weight: 700 !important;
+      text-decoration: none !important;
     }
-    
+
     .tab-btn:hover {
-      color: #004a99;
-      background: #e9ecef;
+      color: #004a99 !important;
+      background: #e9ecef !important;
     }
-    
+
     .tab-btn.active {
-      color: #004a99;
-      background: transparent;
-      border-bottom: 3px solid #004a99;
+      color: #004a99 !important;
+      border-bottom-color: #004a99 !important;
     }
 
     .tab-content {
@@ -134,17 +119,16 @@
         margin: 0 -15px 20px -15px !important; 
       }
 
-      /* ... keep the rest of your .tabs-wrapper and .menu-grid CSS below this ... */
-
       /* 2. Scrollable Tabs with Arrow Indicator */
       .tabs-wrapper {
         position: relative;
-        margin-top: 10px;
+        margin: -20px -15px 20px -15px;
       }
     
       
       .tab-btn {
-        padding: 10px 15px; /* Slimmer tab buttons */
+        min-height: 40px;
+        padding: 0 12px;
         font-size: 14px;
       }
 
@@ -183,7 +167,7 @@
 
   <div class="tabs-wrapper">
     <div class="tab-buttons">
-      <button class="tab-btn active" onclick="openTab(event, 'tab-jobs')">Jobs</button>
+      <button class="tab-btn active" onclick="openTab(event, 'tab-jobs')">Importer</button>
       <button class="tab-btn" onclick="openTab(event, 'tab-engineers')">Engineers</button>
       <button class="tab-btn" onclick="openTab(event, 'tab-inventory')">Inventory</button>
       <button class="tab-btn" onclick="openTab(event, 'tab-website')">Website Management</button>
@@ -225,7 +209,7 @@
 
   <div id="tab-inventory" class="tab-content">
     <div class="menu-grid">
-      <a href="inventory.html" class="card">
+      <a href="https://parts.fieldhub.uk" class="card">
         <div style="font-size: 40px; margin-bottom: 10px;">📦</div>
         <h3>Inventory System</h3>
         <p>Manage locations, items, and stock levels</p>
@@ -244,6 +228,16 @@
         <div style="font-size: 40px; margin-bottom: 10px;">%</div>
         <h3>Manage Offers</h3>
         <p>Edit offer tiles and details</p>
+      </a>
+      <a href="content-cards-admin.html" class="card">
+        <div style="font-size: 40px; margin-bottom: 10px;">TXT</div>
+        <h3>Page Content Cards</h3>
+        <p>Add, edit and manage page content cards</p>
+      </a>
+      <a href="hero-admin.html" class="card">
+        <div style="font-size: 40px; margin-bottom: 10px;">HERO</div>
+        <h3>Hero Pictures</h3>
+        <p>Edit page hero images and links</p>
       </a>
       <a href="testimonials-admin.html" class="card">
         <div style="font-size: 40px; margin-bottom: 10px;">👤</div>
@@ -308,6 +302,16 @@
       evt.currentTarget.classList.add("active");
     }
 
+    function openInitialTabFromHash() {
+      const hashTab = window.location.hash.replace('#', '');
+      if (!hashTab) return;
+      const targetTab = document.getElementById(hashTab);
+      const targetButton = Array.from(document.getElementsByClassName('tab-btn')).find(button =>
+        button.getAttribute('onclick')?.includes(`'${hashTab}'`)
+      );
+      if (targetTab && targetButton) openTab({ currentTarget: targetButton }, hashTab);
+    }
+
     /* SECURITY & INITIALIZATION */
     async function checkSecurity() {
       const lib = window.supabase || window.Supabase;
@@ -332,6 +336,7 @@
         
         // --- TRIGGER THE HEADER LOAD ---
         await window.loadAdminHeader(session); 
+        openInitialTabFromHash();
         
         // Final reveal of the page content
         document.body.style.visibility = 'visible'; 

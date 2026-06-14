@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarmHub - Content Cards | Warm Right Ltd</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css?v=20260614c">
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/tiles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.adminPageTitle = "WarmHub - Content Cards";</script>
+  <script src="../assets/js/admin-include.js?v=20260614c"></script>
+  <style>
+    body { font-family:'Segoe UI', sans-serif; background:#f4f7f6; margin:0; padding:40px; visibility:hidden; color:#263238; }
+    #admin-header-container { margin:-40px -40px 30px -40px; }
+    .container { max-width:1500px; margin:0 auto; }
+    .panel { background:#fff; border-radius:12px; padding:24px; box-shadow:0 4px 8px rgba(0,0,0,.05); margin-bottom:24px; }
+    .layout { display:grid; grid-template-columns: 1fr; gap:24px; align-items:start; }
+    .toolbar { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center; }
+    .toolbar-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    h2, h3 { color:#004a99; margin:0; }
+    .hint, .status { color:#667085; font-size:14px; }
+    table { width:100%; border-collapse:collapse; margin-top:14px; }
+    th { text-align:left; color:#004a99; background:#f9fafb; border-bottom:2px solid #e5e7eb; padding:12px; }
+    td { border-bottom:1px solid #e5e7eb; padding:12px; vertical-align:top; }
+    label { display:block; font-weight:700; margin:14px 0 6px; }
+    input, textarea, select, button { font-family:'Segoe UI', sans-serif; }
+    input, textarea, select { width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:6px; padding:10px; font-size:15px; }
+    textarea { min-height:150px; resize:vertical; }
+    input[type="checkbox"], input[type="color"], input[type="range"] { width:auto; }
+    input[type="range"] { width:100%; }
+    button { padding:10px 16px; border:0; border-radius:6px; font-weight:700; cursor:pointer; }
+    .btn-primary { background:#004a99; color:#fff; }
+    .btn-accent { background:#ff8c00; color:#fff; }
+    .btn-outline { background:#fff; color:#004a99; border:1px solid #e5e7eb; }
+    .btn-danger { background:#ef4444; color:#fff; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .hidden { display:none !important; }
+    .view-hidden { display:none !important; }
+    .html-editor { border:1px solid #d1d5db; border-radius:8px; overflow:hidden; background:#fff; }
+    .html-editor-toolbar { display:flex; gap:8px; flex-wrap:wrap; padding:10px; background:#f8fafc; border-bottom:1px solid #e5e7eb; }
+    .html-editor-toolbar button { min-width:40px; padding:8px 11px; background:#fff; color:#004a99; border:1px solid #dbe2ea; border-radius:6px; }
+    .html-editor-toolbar button:hover { background:#eef6ff; }
+    .html-editor-body {
+      min-height:170px;
+      padding:14px;
+      outline:none;
+      font-size:15px;
+      line-height:1.65;
+      color:#0f1724;
+    }
+    .html-editor-body:empty::before {
+      content:attr(data-placeholder);
+      color:#667085;
+    }
+    .slider-label { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .slider-label output { color:#667085; font-weight:600; }
+    .preview-panel { position:relative; }
+    .preview-frame { background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:18px; margin-top:16px; overflow:auto; position:relative; }
+    .preview-frame-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; color:#004a99; font-weight:800; }
+    .desktop-preview-inner { width:1150px; max-width:none; margin:0 auto; padding:0 18px; box-sizing:border-box; }
+    .mobile-preview-inner { width:390px; max-width:100%; margin:0 auto; }
+    .preview-card-wrap { position:relative; }
+    .preview-image-click {
+      position:absolute;
+      left:18px;
+      top:0;
+      bottom:0;
+      width:220px;
+      z-index:3;
+      border:0;
+      background:transparent;
+      cursor:crosshair;
+      padding:0;
+    }
+    .mobile-preview .preview-image-click {
+      inset:0 0 auto 0;
+      width:100%;
+      height:150px;
+    }
+    .preview-card-wrap:has(.content-card-no-image) .preview-image-click {
+      display:none;
+    }
+    .desktop-preview .article-gap.card { width:100%; }
+    .crop-popover {
+      position:absolute;
+      z-index:20;
+      width:min(340px, calc(100vw - 48px));
+      padding:16px;
+      border:1px solid #dbe2ea;
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 18px 45px rgba(15,23,42,.22);
+    }
+    .crop-popover[hidden] { display:none; }
+    .crop-popover-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; color:#004a99; font-weight:800; }
+    .crop-popover .btn-outline { padding:6px 10px; }
+    .preview-frame.mobile-preview .article-gap.card { display:block; min-height:0; padding:178px 20px 30px; line-height:1.65; }
+    .preview-frame.mobile-preview .article-gap.card::before {
+      inset:0 0 auto 0;
+      width:100%;
+      height:150px;
+      background:
+        linear-gradient(135deg, rgba(10, 44, 102, 0.08), rgba(255, 209, 102, 0.16)),
+        var(--article-visual) var(--article-mobile-image-position) / var(--article-mobile-image-size) no-repeat;
+      border-right:0;
+      border-bottom:4px solid var(--accent-teal);
+    }
+    .preview-frame.mobile-preview .article-gap.card.content-card-no-image {
+      padding:24px 20px 32px;
+    }
+    .preview-frame.mobile-preview .article-gap.card.content-card-no-image::before {
+      display:none;
+    }
+    .preview-frame.mobile-preview .article-gap.card::after { left:20px; bottom:14px; }
+    #desktop-preview-card, #mobile-preview-card { margin-bottom:0; opacity:1; transform:none; }
+    .image-browser { display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center; background:rgba(12,22,40,.72); }
+    .image-browser.open { display:flex; }
+    .image-panel { width:min(1000px,92vw); max-height:86vh; overflow:auto; background:#fff; border-radius:12px; padding:24px; }
+    .image-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px; }
+    .image-choice { border:1px solid #e5e7eb; border-radius:8px; background:#fff; padding:8px; text-align:left; }
+    .image-choice img { width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; background:#f3f4f6; }
+    .image-choice span { display:block; margin-top:6px; font-size:12px; word-break:break-word; color:#444; }
+    @media (max-width:1220px) { .desktop-preview-inner { margin:0; } }
+    @media (max-width:950px) { body{padding:75px 14px 20px!important;} #admin-header-container{margin:0 -14px 20px!important;} .layout{grid-template-columns:1fr;} .preview-panel{position:relative;} }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+  <main class="container">
+    <section id="list-view" class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Content Cards</h2>
+          <p class="hint">Manage the visual article cards used on public pages. Public pages keep their existing fallback text if a card is missing.</p>
+        </div>
+        <div class="toolbar-controls">
+          <select id="page-filter" onchange="renderCards()"></select>
+          <button class="btn-outline" onclick="showEditorForNew()">Add Content Card</button>
+          <button class="btn-accent" onclick="seedDefaults()">Seed Deployed Pages</button>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+      <table>
+        <thead><tr><th>Card</th><th>Page</th><th>Image</th><th>Visible</th><th></th></tr></thead>
+        <tbody id="cards-body"></tbody>
+      </table>
+    </section>
+
+    <section id="editor-view" class="layout view-hidden">
+      <div class="panel">
+        <div class="toolbar">
+          <h2 id="form-title">Add Content Card</h2>
+          <div class="toolbar-controls">
+            <button class="btn-outline" onclick="resetForm()">Clear Form</button>
+            <button class="btn-outline" onclick="showListView()">Back to Content Cards</button>
+          </div>
+        </div>
+
+        <label>Card key</label>
+        <input id="card_key" placeholder="home:intro">
+        <label>Page key</label>
+        <input id="page_key" list="page-key-options" placeholder="home">
+        <datalist id="page-key-options"></datalist>
+        <label>Internal title</label>
+        <input id="title" placeholder="Welcome to Warm Right">
+        <label>Body text</label>
+        <div class="html-editor">
+          <div class="html-editor-toolbar" aria-label="Body text formatting">
+            <button type="button" onclick="formatBody('bold')" title="Bold"><strong>B</strong></button>
+            <button type="button" onclick="formatBody('italic')" title="Italic"><em>I</em></button>
+            <button type="button" onclick="formatBody('underline')" title="Underline"><u>U</u></button>
+            <button type="button" onclick="insertBodyBreak()" title="New line">Line</button>
+          </div>
+          <div id="body_editor" class="html-editor-body" contenteditable="true" data-placeholder="Write the card text here. Highlight text to make it bold, italic, or underlined."></div>
+        </div>
+        <textarea id="body_html" class="hidden"></textarea>
+        <label>Image URL</label>
+        <div style="display:grid; grid-template-columns:1fr auto auto; gap:10px;">
+          <input id="image_url" placeholder="assets/images/professional.jpg">
+          <button class="btn-outline" onclick="openImageBrowser()">Choose</button>
+          <button class="btn-outline" type="button" onclick="removeCardImage()">Remove Picture</button>
+        </div>
+        <p class="hint">Leave Image URL blank to show this card without a picture. Click the image in either preview to adjust its crop live.</p>
+        <label style="display:flex; gap:8px; align-items:center;"><input id="show_button" type="checkbox" checked onchange="updatePreview()"> Show button on card</label>
+        <label>Button label</label>
+        <input id="button_label" placeholder="Book a Visit">
+        <label>Button URL</label>
+        <input id="button_url" placeholder="/book-a-visit.html">
+        <label style="display:flex; gap:8px; align-items:center;"><input id="is_active" type="checkbox" checked> Visible on website</label>
+        <div class="actions">
+          <button class="btn-primary" onclick="saveCard()">Save Card</button>
+          <button class="btn-danger" onclick="deleteCard()">Delete</button>
+          <button class="btn-outline" onclick="showListView()">Cancel</button>
+        </div>
+      </div>
+
+      <aside class="panel preview-panel">
+        <h3>Live Preview</h3>
+        <p class="hint">Use X/Y and Zoom to move the selected image inside the frame. Desktop is shown at real page width; mobile uses the stacked layout.</p>
+        <div class="preview-frame desktop-preview">
+          <div class="preview-frame-title"><span>Desktop preview</span><span>wide card</span></div>
+          <div class="desktop-preview-inner preview-card-wrap">
+            <p id="desktop-preview-card" class="article-gap card visible is-managed-content"></p>
+            <button class="preview-image-click" type="button" onclick="openCropPopover('desktop', event)" aria-label="Adjust desktop image crop"></button>
+          </div>
+        </div>
+        <div class="preview-frame mobile-preview">
+          <div class="preview-frame-title"><span>Mobile preview</span><span>390px</span></div>
+          <div class="mobile-preview-inner preview-card-wrap">
+            <p id="mobile-preview-card" class="article-gap card visible is-managed-content"></p>
+            <button class="preview-image-click" type="button" onclick="openCropPopover('mobile', event)" aria-label="Adjust mobile image crop"></button>
+          </div>
+        </div>
+
+        <div id="desktop-crop-popover" class="crop-popover" hidden>
+          <div class="crop-popover-head">
+            <span>Desktop image crop</span>
+            <button class="btn-outline" type="button" onclick="closeCropPopovers()">Close</button>
+          </div>
+          <label><span class="slider-label">Image X <output id="image_position_x_value">50%</output></span><input id="image_position_x" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Image Y <output id="image_position_y_value">50%</output></span><input id="image_position_y" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Zoom <output id="image_zoom_value">115%</output></span><input id="image_zoom" type="range" min="100" max="180" value="115" oninput="updatePreview()"></label>
+        </div>
+
+        <div id="mobile-crop-popover" class="crop-popover" hidden>
+          <div class="crop-popover-head">
+            <span>Mobile image crop</span>
+            <button class="btn-outline" type="button" onclick="closeCropPopovers()">Close</button>
+          </div>
+          <label><span class="slider-label">Mobile X <output id="mobile_image_position_x_value">50%</output></span><input id="mobile_image_position_x" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Mobile Y <output id="mobile_image_position_y_value">50%</output></span><input id="mobile_image_position_y" type="range" min="0" max="100" value="50" oninput="updatePreview()"></label>
+          <label><span class="slider-label">Mobile Zoom <output id="mobile_image_zoom_value">115%</output></span><input id="mobile_image_zoom" type="range" min="100" max="180" value="115" oninput="updatePreview()"></label>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="image-browser" class="image-browser" onclick="if(event.target === this) closeImageBrowser()">
+    <div class="image-panel">
+      <div class="toolbar">
+        <h2>Choose Image</h2>
+        <div style="display:flex; gap:10px;">
+          <input id="image-search" type="search" placeholder="Search images..." oninput="renderImageBrowser()">
+          <button class="btn-outline" onclick="closeImageBrowser()">Close</button>
+        </div>
+      </div>
+      <div id="image-status" class="status">Loading images...</div>
+      <div id="image-grid" class="image-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4YW1wdXByY25hdXhiYmlqbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NDgyNjUsImV4cCI6MjA5MzMyNDI2NX0.Er1hMQbaXnR4hzHfR2my0SmtwUcUs49HaCVqYwMBHuQ';
+    const GITHUB_IMAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/github-images`;
+    const DEPLOYED_PAGES = [
+      { key:'home', title:'Home', url:'../index.html' },
+      { key:'about', title:'About Us', url:'../about.html' },
+      { key:'breakdowns', title:'Breakdowns', url:'../services/breakdowns.html', group:'Services' },
+      { key:'repairs', title:'Repairs', url:'../services/repairs.html', group:'Services' },
+      { key:'annual-servicing', title:'Annual Servicing', url:'../services/annual-servicing.html', group:'Services' },
+      { key:'landlords-certificates', title:'Landlords Certificates', url:'../services/landlords-certificates.html', group:'Services' },
+      { key:'boiler-installation', title:'Boiler Installations', url:'../services/boiler-installation.html', group:'Services' },
+      { key:'general-maintenance', title:'Plumbing', url:'../services/general-maintenance.html', group:'Services' },
+      { key:'kitchens-bathrooms', title:'Kitchens and Bathrooms', url:'../services/kitchens-bathrooms.html', group:'Services' },
+      { key:'powerflushing-descaling', title:'Powerflushing and Descaling', url:'../services/powerflushing-descaling.html', group:'Services' },
+      { key:'second-opinion', title:'Second Opinions', url:'../services/second-opinion.html', group:'Services' },
+      { key:'unvented-cylinders', title:'Unvented Cylinders', url:'../services/unvented-cylinders.html', group:'Services' },
+      { key:'common-faults', title:'Common Faults', url:'../support/common-faults.html', group:'Support' },
+      { key:'boiler-fault-codes', title:'Boiler Fault Codes', url:'../support/boiler-fault-codes.html', group:'Support' },
+      { key:'manuals', title:'Manuals', url:'../support/manuals.html', group:'Support' },
+      { key:'offers', title:'Offers', url:'../offers.html' },
+      { key:'schedule-of-rates', title:'Our Rates', url:'../schedule-of-rates.html' },
+      { key:'book-a-visit', title:'Book A Visit', url:'../book-a-visit.html' },
+      { key:'contact', title:'Contact Us', url:'../contact.html' },
+      { key:'testimonals', title:'Testimonials', url:'../testimonals.html' },
+      { key:'testimonial-submit', title:'Submit Testimonial', url:'../testimonial-submit.html' }
+    ];
+    let currentSession = null;
+    let editingId = null;
+    let cards = [];
+    let imageFiles = [];
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib) { setTimeout(checkSecurity, 50); return; }
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) { window.location.href = 'login.html'; return; }
+      currentSession = session;
+      await window.loadAdminHeader(session);
+      document.body.style.visibility = 'visible';
+      setupPageControls();
+      await loadCards();
+      updatePreview();
+      showListView();
+    }
+
+    function showListView() {
+      closeCropPopovers();
+      document.getElementById('list-view').classList.remove('view-hidden');
+      document.getElementById('editor-view').classList.add('view-hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showEditorView() {
+      document.getElementById('list-view').classList.add('view-hidden');
+      document.getElementById('editor-view').classList.remove('view-hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showEditorForNew() {
+      resetForm();
+      showEditorView();
+    }
+
+    function setupPageControls() {
+      const options = DEPLOYED_PAGES.map(page => `<option value="${escapeHtml(page.key)}">${escapeHtml(page.group ? `${page.group}: ${page.title}` : page.title)}</option>`).join('');
+      document.getElementById('page-key-options').innerHTML = options;
+      document.getElementById('page-filter').innerHTML = `<option value="">All deployed pages</option>${options}`;
+    }
+
+    async function loadCards() {
+      const { data, error } = await window.db.from('site_content_cards').select('*').order('page_key').order('sort_order');
+      if (error) return setStatus(error.message);
+      cards = data || [];
+      renderCards();
+    }
+
+    function renderCards() {
+      const pageFilter = document.getElementById('page-filter')?.value || '';
+      const visibleCards = pageFilter ? cards.filter(card => card.page_key === pageFilter) : cards;
+      document.getElementById('cards-body').innerHTML = visibleCards.map(card => `
+        <tr>
+          <td><strong>${escapeHtml(card.title || card.card_key)}</strong><br><small>${escapeHtml(card.card_key)}</small></td>
+          <td>${escapeHtml(card.page_key)}</td>
+          <td>${card.image_url ? `<img src="${imageSrcForAdmin(card.image_url)}" style="width:72px;height:48px;object-fit:cover;border-radius:6px;" onerror="this.src='../assets/images/no-image.jpg'">` : '<span class="hint">No picture</span>'}</td>
+          <td>${card.is_active ? 'Yes' : 'No'}</td>
+          <td><button class="btn-outline" onclick="editCard('${card.id}')">Edit</button></td>
+        </tr>
+      `).join('') || `<tr><td colspan="5">No content cards found for this page yet.</td></tr>`;
+    }
+
+    function editCard(id) {
+      const card = cards.find(item => item.id === id);
+      if (!card) return;
+      editingId = id;
+      document.getElementById('form-title').textContent = 'Editing: ' + (card.title || card.card_key);
+      for (const key of ['card_key','page_key','title','body_html','image_url','button_label','button_url','image_position_x','image_position_y','image_zoom']) {
+        document.getElementById(key).value = card[key] ?? '';
+      }
+      setBodyEditorHtml(card.body_html || '');
+      document.getElementById('mobile_image_position_x').value = card.mobile_image_position_x ?? card.image_position_x ?? 50;
+      document.getElementById('mobile_image_position_y').value = card.mobile_image_position_y ?? card.image_position_y ?? 50;
+      document.getElementById('mobile_image_zoom').value = card.mobile_image_zoom ?? card.image_zoom ?? 115;
+      document.getElementById('is_active').checked = card.is_active !== false;
+      document.getElementById('show_button').checked = card.show_button !== false;
+      updatePreview();
+      showEditorView();
+    }
+
+    function resetForm() {
+      editingId = null;
+      document.getElementById('form-title').textContent = 'Add Content Card';
+      for (const key of ['card_key','page_key','title','body_html','image_url','button_label','button_url']) document.getElementById(key).value = '';
+      setBodyEditorHtml('');
+      document.getElementById('image_position_x').value = 50;
+      document.getElementById('image_position_y').value = 50;
+      document.getElementById('image_zoom').value = 115;
+      document.getElementById('mobile_image_position_x').value = 50;
+      document.getElementById('mobile_image_position_y').value = 50;
+      document.getElementById('mobile_image_zoom').value = 115;
+      document.getElementById('is_active').checked = true;
+      document.getElementById('show_button').checked = true;
+      updatePreview();
+    }
+
+    async function saveCard() {
+      syncBodyEditorToTextarea();
+      const cardKey = document.getElementById('card_key').value.trim();
+      const pageKey = document.getElementById('page_key').value.trim();
+      if (!cardKey || !pageKey) return alert('Card key and page key are required.');
+      const payload = {
+        card_key: cardKey,
+        page_key: pageKey,
+        title: document.getElementById('title').value.trim(),
+        body_html: document.getElementById('body_html').value.trim(),
+        image_url: document.getElementById('image_url').value.trim(),
+        image_position_x: Number(document.getElementById('image_position_x').value),
+        image_position_y: Number(document.getElementById('image_position_y').value),
+        image_zoom: Number(document.getElementById('image_zoom').value),
+        mobile_image_position_x: Number(document.getElementById('mobile_image_position_x').value),
+        mobile_image_position_y: Number(document.getElementById('mobile_image_position_y').value),
+        mobile_image_zoom: Number(document.getElementById('mobile_image_zoom').value),
+        show_button: document.getElementById('show_button').checked,
+        button_label: document.getElementById('button_label').value.trim(),
+        button_url: document.getElementById('button_url').value.trim(),
+        is_active: document.getElementById('is_active').checked,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = editingId
+        ? await window.db.from('site_content_cards').update(payload).eq('id', editingId)
+        : await window.db.from('site_content_cards').insert([payload]);
+      if (error) alert(error.message);
+      else { resetForm(); await loadCards(); setStatus('Card saved.'); showListView(); }
+    }
+
+    async function deleteCard() {
+      if (!editingId || !confirm('Delete this content card?')) return;
+      const { error } = await window.db.from('site_content_cards').delete().eq('id', editingId);
+      if (error) alert(error.message);
+      else { resetForm(); await loadCards(); showListView(); }
+    }
+
+    async function seedDefaults() {
+      setStatus('Reading deployed pages and preparing content cards...');
+      const rows = await buildSeedRowsFromDeployedPages();
+      const { data: existing, error: existingError } = await window.db
+        .from('site_content_cards')
+        .select('card_key')
+        .in('card_key', rows.map(row => row.card_key));
+      if (existingError) return alert(existingError.message);
+
+      const existingKeys = new Set((existing || []).map(row => row.card_key));
+      const missingRows = rows.filter(row => !existingKeys.has(row.card_key));
+      if (!missingRows.length) {
+        await loadCards();
+        setStatus('All deployed page content cards already exist.');
+        return;
+      }
+
+      const { error } = await window.db
+        .from('site_content_cards')
+        .upsert(missingRows, { onConflict: 'card_key', ignoreDuplicates: true });
+      if (error) alert(error.message);
+      else { await loadCards(); setStatus(`${missingRows.length} deployed content card${missingRows.length === 1 ? '' : 's'} seeded from the live pages.`); }
+    }
+
+    async function buildSeedRowsFromDeployedPages() {
+      const fallbackRows = [
+        { card_key:'home:intro', page_key:'home', title:'Welcome to Warm Right', body_html:'Your home deserves reliable heat, safe systems, and clear advice - and that is exactly what we deliver.<br><br>Whether you need a new installation, a system service, or a second opinion, you are in expert hands.', image_url:'assets/images/professional.jpg', image_position_x:50, image_position_y:42, image_zoom:118, mobile_image_position_x:50, mobile_image_position_y:50, mobile_image_zoom:118, show_button:true, button_label:'Book a Visit', button_url:'book-a-visit.html', sort_order:0, is_active:true },
+        { card_key:'home:support', page_key:'home', title:'Need help?', body_html:'We have created our own fault guides that are easy for anyone to navigate.<br><br>If you need assistance and want to chat, visit our Contact Us page or why not start a live web chat?', image_url:'assets/images/fault-finder.png', image_position_x:50, image_position_y:50, image_zoom:115, mobile_image_position_x:50, mobile_image_position_y:50, mobile_image_zoom:115, show_button:true, button_label:'Contact Us', button_url:'/contact.html', sort_order:1, is_active:true }
+      ];
+
+      const extractedRows = [];
+      for (const page of DEPLOYED_PAGES.filter(item => item.key !== 'home')) {
+        try {
+          const response = await fetch(page.url, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const html = await response.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const cards = Array.from(doc.querySelectorAll('p.article-gap.card'));
+          cards.forEach((cardEl, index) => {
+            extractedRows.push({
+              card_key: `${page.key}:card-${index + 1}`,
+              page_key: page.key,
+              title: findSeedTitle(cardEl, page.title),
+              body_html: sanitizeBodyHtml(cardEl.innerHTML) || seedBodyForPage(page.key),
+              image_url: seedImageForPage(page.key, index),
+              image_position_x: 50,
+              image_position_y: 50,
+              image_zoom: 115,
+              mobile_image_position_x: 50,
+              mobile_image_position_y: 50,
+              mobile_image_zoom: 115,
+              show_button: Boolean(seedButtonForPage(page.key).label),
+              button_label: seedButtonForPage(page.key).label,
+              button_url: seedButtonForPage(page.key).url || page.url.replace(/^\.\.\//, ''),
+              sort_order: index,
+              is_active: seedCardIsActive(page.key)
+            });
+          });
+        } catch (err) {
+          extractedRows.push({
+            card_key: `${page.key}:card-1`,
+            page_key: page.key,
+            title: page.title,
+            body_html: '',
+            image_url: seedImageForPage(page.key, 0),
+            image_position_x: 50,
+            image_position_y: 50,
+            image_zoom: 115,
+            mobile_image_position_x: 50,
+            mobile_image_position_y: 50,
+            mobile_image_zoom: 115,
+            show_button: false,
+            button_label: '',
+            button_url: page.url.replace(/^\.\.\//, ''),
+            sort_order: 0,
+            is_active: false
+          });
+          console.warn(`Could not read deployed page ${page.url}`, err);
+        }
+      }
+
+      return [...fallbackRows, ...extractedRows];
+    }
+
+    function findSeedTitle(cardEl, fallback) {
+      let node = cardEl.previousElementSibling;
+      while (node) {
+        if (/^h[1-3]$/i.test(node.tagName)) return node.textContent.replace(/\s+/g, ' ').trim() || fallback;
+        node = node.previousElementSibling;
+      }
+
+      const sectionHeading = cardEl.closest('section')?.querySelector('h1,h2,h3');
+      return sectionHeading?.textContent.replace(/\s+/g, ' ').trim() || fallback;
+    }
+
+    function seedImageForPage(pageKey, index) {
+      const images = {
+        about: 'assets/images/professional.jpg',
+        breakdowns: 'assets/images/boiler-repair-hero.jpg',
+        repairs: 'assets/images/boiler-repair.jpg',
+        'annual-servicing': 'assets/images/engineers.jpg',
+        'landlords-certificates': 'assets/images/landlord-cp12.jpg',
+        'boiler-installation': 'assets/images/boiler-installation.jpg',
+        'general-maintenance': 'assets/images/plumbing.png',
+        'kitchens-bathrooms': 'assets/images/kitchen-bathrooms.jpg',
+        'powerflushing-descaling': 'assets/images/powerflushing.jpg',
+        'second-opinion': 'assets/images/second-opinion.jpg',
+        'unvented-cylinders': 'assets/images/unvented-cylinders.jpg',
+        'common-faults': 'assets/images/fault-finder.png',
+        'boiler-fault-codes': 'assets/images/fault-boiler.gif',
+        manuals: 'assets/images/manuals-hero.png',
+        offers: 'assets/images/landlord-deal.jpg',
+        'schedule-of-rates': 'assets/images/boiler-repair.jpg',
+        'book-a-visit': 'assets/images/book-2.png',
+        contact: 'assets/images/contact.jpg',
+        testimonals: 'assets/images/testimonials.jpg',
+        'testimonial-submit': 'assets/images/testimonials.jpg'
+      };
+      return images[pageKey] || (index % 2 ? 'assets/images/engineers.jpg' : 'assets/images/professional.jpg');
+    }
+
+    function seedBodyForPage(pageKey) {
+      const bodies = {
+        'book-a-visit': 'Choose the option that suits you best - whether you would like to call us, book online, or request a callback.',
+        contact: 'Choose the option that suits you best - whether you would like to call us, email, or send a message through our form.',
+        testimonals: 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.'
+      };
+      return bodies[pageKey] || '';
+    }
+
+    function seedButtonForPage(pageKey) {
+      const buttons = {
+        testimonals: { label: 'Send Us Your Testimonial', url: 'testimonial-submit.html' }
+      };
+      return buttons[pageKey] || { label: '', url: '' };
+    }
+
+    function seedCardIsActive(pageKey) {
+      return ['book-a-visit', 'contact', 'testimonals'].includes(pageKey);
+    }
+
+    function updatePreview() {
+      syncBodyEditorToTextarea();
+      const image = document.getElementById('image_url').value.trim();
+      const x = document.getElementById('image_position_x').value;
+      const y = document.getElementById('image_position_y').value;
+      const zoom = document.getElementById('image_zoom').value;
+      const mobileX = document.getElementById('mobile_image_position_x').value;
+      const mobileY = document.getElementById('mobile_image_position_y').value;
+      const mobileZoom = document.getElementById('mobile_image_zoom').value;
+      const buttonLabel = document.getElementById('button_label').value.trim();
+      const showButton = document.getElementById('show_button').checked;
+      const body = document.getElementById('body_html').value || 'Card preview text will appear here.';
+      const html = `<span class="content-card-body">${body}</span>${showButton && buttonLabel ? `<span class="content-card-actions"><a class="content-card-button">${escapeHtml(buttonLabel)}</a></span>` : ''}`;
+
+      document.getElementById('image_position_x_value').textContent = `${x}%`;
+      document.getElementById('image_position_y_value').textContent = `${y}%`;
+      document.getElementById('image_zoom_value').textContent = `${zoom}%`;
+      document.getElementById('mobile_image_position_x_value').textContent = `${mobileX}%`;
+      document.getElementById('mobile_image_position_y_value').textContent = `${mobileY}%`;
+      document.getElementById('mobile_image_zoom_value').textContent = `${mobileZoom}%`;
+
+      const desktopPreview = document.getElementById('desktop-preview-card');
+      desktopPreview.classList.toggle('content-card-no-image', !image);
+      if (image) desktopPreview.style.setProperty('--article-visual', `url("${imageUrlForCss(image).replace(/"/g, '\\"')}")`);
+      desktopPreview.style.setProperty('--article-image-position', `${x}% ${y}%`);
+      desktopPreview.style.setProperty('--article-image-size', `${zoom}%`);
+      desktopPreview.innerHTML = html;
+
+      const mobilePreview = document.getElementById('mobile-preview-card');
+      mobilePreview.classList.toggle('content-card-no-image', !image);
+      if (image) mobilePreview.style.setProperty('--article-visual', `url("${imageUrlForCss(image).replace(/"/g, '\\"')}")`);
+      mobilePreview.style.setProperty('--article-image-position', `${x}% ${y}%`);
+      mobilePreview.style.setProperty('--article-image-size', `${zoom}%`);
+      mobilePreview.style.setProperty('--article-mobile-image-position', `${mobileX}% ${mobileY}%`);
+      mobilePreview.style.setProperty('--article-mobile-image-size', `${mobileZoom}%`);
+      mobilePreview.innerHTML = html;
+    }
+
+    function removeCardImage() {
+      document.getElementById('image_url').value = '';
+      closeCropPopovers();
+      updatePreview();
+    }
+
+    function formatBody(command) {
+      document.getElementById('body_editor').focus();
+      document.execCommand(command, false, null);
+      syncBodyEditorToTextarea();
+      updatePreview();
+    }
+
+    function insertBodyBreak() {
+      document.getElementById('body_editor').focus();
+      document.execCommand('insertHTML', false, '<br><br>');
+      syncBodyEditorToTextarea();
+      updatePreview();
+    }
+
+    function setBodyEditorHtml(html) {
+      const clean = sanitizeBodyHtml(html);
+      document.getElementById('body_editor').innerHTML = clean;
+      document.getElementById('body_html').value = clean;
+    }
+
+    function syncBodyEditorToTextarea() {
+      const editor = document.getElementById('body_editor');
+      if (!editor) return;
+      const clean = sanitizeBodyHtml(editor.innerHTML);
+      document.getElementById('body_html').value = clean;
+    }
+
+    function sanitizeBodyHtml(html) {
+      const template = document.createElement('template');
+      template.innerHTML = html || '';
+
+      function cleanNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.textContent);
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+        const tag = node.tagName.toLowerCase();
+        const children = Array.from(node.childNodes).map(cleanNode).join('');
+        if (tag === 'strong' || tag === 'b') return children ? `<strong>${children}</strong>` : '';
+        if (tag === 'em' || tag === 'i') return children ? `<em>${children}</em>` : '';
+        if (tag === 'u') return children ? `<u>${children}</u>` : '';
+        if (tag === 'br') return '<br>';
+        if (tag === 'div' || tag === 'p') return children ? `${children}<br>` : '<br>';
+        return children;
+      }
+
+      return Array.from(template.content.childNodes)
+        .map(cleanNode)
+        .join('')
+        .replace(/(<br>\s*){3,}/g, '<br><br>')
+        .replace(/(\s*<br>\s*)+$/g, '');
+    }
+
+    async function openImageBrowser() {
+      document.getElementById('image-browser').classList.add('open');
+      document.getElementById('image-status').textContent = 'Loading images...';
+      try {
+        const data = await callImageFunction('list');
+        imageFiles = (data.files || []).sort((a, b) => a.name.localeCompare(b.name));
+        renderImageBrowser();
+      } catch (err) {
+        document.getElementById('image-status').textContent = err.message;
+      }
+    }
+    function closeImageBrowser() { document.getElementById('image-browser').classList.remove('open'); }
+    function renderImageBrowser() {
+      const query = document.getElementById('image-search').value.trim().toLowerCase();
+      const files = imageFiles.filter(file => file.name.toLowerCase().includes(query));
+      document.getElementById('image-status').textContent = `${files.length} image${files.length === 1 ? '' : 's'} found.`;
+      document.getElementById('image-grid').innerHTML = files.map(file => `
+        <button class="image-choice" onclick="chooseImage('${encodeURIComponent(file.webPath || `assets/images/${file.name}`)}')">
+          <img src="${escapeHtml(file.downloadUrl || imageSrcForAdmin(file.webPath))}" alt="${escapeHtml(file.name)}">
+          <span>${escapeHtml(file.name)}</span>
+        </button>
+      `).join('');
+    }
+    function chooseImage(path) {
+      document.getElementById('image_url').value = decodeURIComponent(path);
+      closeImageBrowser();
+      updatePreview();
+    }
+    function openCropPopover(mode, event) {
+      event?.stopPropagation();
+      const popover = document.getElementById(`${mode}-crop-popover`);
+      const other = document.getElementById(mode === 'desktop' ? 'mobile-crop-popover' : 'desktop-crop-popover');
+      if (other) other.hidden = true;
+      if (!popover) return;
+
+      const panel = document.querySelector('.preview-panel');
+      const panelRect = panel.getBoundingClientRect();
+      popover.hidden = false;
+
+      const clickX = event?.clientX ?? panelRect.left + 24;
+      const clickY = event?.clientY ?? panelRect.top + 24;
+      const maxTop = Math.max(12, panel.clientHeight - popover.offsetHeight - 12);
+      const maxLeft = Math.max(12, panel.clientWidth - popover.offsetWidth - 12);
+      const top = Math.min(
+        Math.max(clickY - panelRect.top + 12, 12),
+        maxTop
+      );
+      const left = Math.min(
+        Math.max(clickX - panelRect.left + 12, 12),
+        maxLeft
+      );
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+    }
+    function closeCropPopovers() {
+      document.getElementById('desktop-crop-popover').hidden = true;
+      document.getElementById('mobile-crop-popover').hidden = true;
+    }
+    document.addEventListener('click', event => {
+      if (
+        event.target.closest('.crop-popover') ||
+        event.target.closest('.preview-image-click')
+      ) return;
+      closeCropPopovers();
+    });
+    async function callImageFunction(action, body = null, method = 'GET') {
+      const response = await fetch(`${GITHUB_IMAGES_FUNCTION}?action=${encodeURIComponent(action)}`, {
+        method,
+        headers: { Authorization: `Bearer ${currentSession.access_token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
+      return data;
+    }
+    function imageSrcForAdmin(path) {
+      if (!path) return '../assets/images/no-image.jpg';
+      if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      return path.startsWith('../') ? path : `../${path.replace(/^\/+/, '')}`;
+    }
+    function imageUrlForCss(path) {
+      if (!path) return '/assets/images/no-image.jpg';
+      if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      return '/' + path.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    }
+    function setStatus(message) { document.getElementById('status').textContent = message; }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
+    document.querySelectorAll('.html-editor-toolbar button').forEach(button => {
+      button.addEventListener('mousedown', event => event.preventDefault());
+    });
+    document.getElementById('body_editor').addEventListener('input', updatePreview);
+    ['image_url','button_label','button_url'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+    checkSecurity();
+  </script>
+</body>
+</html>

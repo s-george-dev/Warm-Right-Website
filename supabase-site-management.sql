@@ -290,9 +290,16 @@ values
   ('kitchens-bathrooms', 'Kitchens and Bathrooms', 'services/kitchens-bathrooms.html', 'services', 6, true),
   ('powerflushing-descaling', 'Powerflushing and Descaling', 'services/powerflushing-descaling.html', 'services', 7, true),
   ('second-opinion', 'Second Opinions', 'services/second-opinion.html', 'services', 8, true),
+  ('unvented-cylinders', 'Unvented Cylinders', 'services/unvented-cylinders.html', 'services', 9, true),
   ('common-faults', 'Common Faults', 'support/common-faults.html', 'support', 0, true),
+  ('boiler-fault-codes', 'Boiler Fault Codes', 'support/boiler-fault-codes.html', 'support', 1, true),
+  ('manuals', 'Manuals', 'support/manuals.html', 'support', 2, true),
   ('offers', 'Offers', 'offers.html', 'main', 4, true),
-  ('schedule-of-rates', 'Our Rates', 'schedule-of-rates.html', 'main', 3, true)
+  ('schedule-of-rates', 'Our Rates', 'schedule-of-rates.html', 'main', 3, true),
+  ('book-a-visit', 'Book A Visit', 'book-a-visit.html', 'main', 7, true),
+  ('contact', 'Contact Us', 'contact.html', 'main', 8, true),
+  ('testimonals', 'Testimonials', 'testimonals.html', 'main', 6, true),
+  ('testimonial-submit', 'Submit Testimonial', 'testimonial-submit.html', 'hidden', 0, true)
 on conflict (page_key) do update
 set title = excluded.title,
     url = excluded.url,
@@ -349,10 +356,43 @@ values
   ('kitchens-bathrooms:card-1', 'kitchens-bathrooms', 'Kitchens and Bathrooms', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'services/kitchens-bathrooms.html', 0, false),
   ('powerflushing-descaling:card-1', 'powerflushing-descaling', 'Powerflushing and Descaling', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'services/powerflushing-descaling.html', 0, false),
   ('second-opinion:card-1', 'second-opinion', 'Second Opinions', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'services/second-opinion.html', 0, false),
+  ('unvented-cylinders:card-1', 'unvented-cylinders', 'Unvented Cylinders', '', 'assets/images/unvented-cylinders.jpg', 50, 50, 115, 50, 50, 115, false, '', 'services/unvented-cylinders.html', 0, false),
   ('common-faults:card-1', 'common-faults', 'Common Faults', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'support/common-faults.html', 0, false),
+  ('boiler-fault-codes:card-1', 'boiler-fault-codes', 'Boiler Fault Codes', '', 'assets/images/fault-boiler.gif', 50, 50, 115, 50, 50, 115, false, '', 'support/boiler-fault-codes.html', 0, false),
+  ('manuals:card-1', 'manuals', 'Manuals', '', 'assets/images/manuals-hero.png', 50, 50, 115, 50, 50, 115, false, '', 'support/manuals.html', 0, false),
   ('offers:card-1', 'offers', 'Offers', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'offers.html', 0, false),
-  ('schedule-of-rates:card-1', 'schedule-of-rates', 'Our Rates', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'schedule-of-rates.html', 0, false)
+  ('schedule-of-rates:card-1', 'schedule-of-rates', 'Our Rates', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'schedule-of-rates.html', 0, false),
+  ('book-a-visit:card-1', 'book-a-visit', 'Book A Visit', 'Choose the option that suits you best - whether you would like to call us, book online, or request a callback.', 'assets/images/book-2.png', 50, 50, 115, 50, 50, 115, false, '', 'book-a-visit.html', 0, true),
+  ('contact:card-1', 'contact', 'Contact Us', 'Choose the option that suits you best - whether you would like to call us, email, or send a message through our form.', 'assets/images/contact.jpg', 50, 50, 115, 50, 50, 115, false, '', 'contact.html', 0, true),
+  ('testimonals:card-1', 'testimonals', 'Testimonials', 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.', 'assets/images/testimonials.jpg', 50, 50, 115, 50, 50, 115, true, 'Send Us Your Testimonial', 'testimonial-submit.html', 0, true),
+  ('testimonial-submit:card-1', 'testimonial-submit', 'Submit Testimonial', '', 'assets/images/testimonials.jpg', 50, 50, 115, 50, 50, 115, false, '', 'testimonial-submit.html', 0, false)
 on conflict (card_key) do nothing;
+
+insert into public.site_heroes
+  (page_key, hero_key, title, subtitle, image_url, image_position_x, image_position_y, image_zoom, mobile_image_position_x, mobile_image_position_y, mobile_image_zoom, link_url, link_label, sort_order, is_active)
+values
+  ('home', 'hero-1', 'Welcome to Warm Right', 'Reliable heating & plumbing across Kent, South East London & East Sussex.', 'assets/images/home-hero.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('about', 'hero-1', 'About Warm Right', 'Family-run heating and plumbing support with clear advice and safe workmanship.', 'assets/images/values.png', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('breakdowns', 'hero-1', 'Boiler Breakdowns', 'Fast, practical support when your heating or hot water stops working.', 'assets/images/breakdowns.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('repairs', 'hero-1', 'Boiler Repairs', 'Straightforward repairs and clear advice from Gas Safe registered engineers.', 'assets/images/boiler-repair-hero.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('annual-servicing', 'hero-1', 'Annual Servicing', 'Keep your boiler running safely, efficiently, and reliably.', 'assets/images/annual-servicing.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('landlords-certificates', 'hero-1', 'Landlord Certificates', 'Gas safety certificates and landlord support without the fuss.', 'assets/images/landlord-cp12.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('boiler-installation', 'hero-1', 'Boiler Installations', 'Helping you choose and fit the right heating system for your home.', 'assets/images/install-hero.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('general-maintenance', 'hero-1', 'Plumbing', 'Reliable plumbing help for everyday problems and planned improvements.', 'assets/images/plumbing.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('kitchens-bathrooms', 'hero-1', 'Kitchens and Bathrooms', 'Practical heating and plumbing support for kitchen and bathroom projects.', 'assets/images/kitchen-bathrooms.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('powerflushing-descaling', 'hero-1', 'Powerflushing and Descaling', 'Improve flow, efficiency, and system performance.', 'assets/images/powerflushing.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('second-opinion', 'hero-1', 'Second Opinions', 'Clear, independent advice before you commit to expensive work.', 'assets/images/second-opinion.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('unvented-cylinders', 'hero-1', 'Unvented Cylinders', 'High-pressure hot water systems installed and maintained safely.', 'assets/images/unvented-cylinders.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('common-faults', 'hero-1', 'Common Faults', 'Simple guidance for common heating and hot water problems.', 'assets/images/common-faults.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('boiler-fault-codes', 'hero-1', 'Boiler Fault Codes', 'Find out what your boiler is trying to tell you.', 'assets/images/fault-boiler.gif', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('manuals', 'hero-1', 'Boiler Manuals', 'Find manuals for common boiler brands or ask us for help.', 'assets/images/manuals-hero.png', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('offers', 'hero-1', 'Offers', 'Current Warm Right offers and packages.', 'assets/images/offers.png', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('schedule-of-rates', 'hero-1', 'Our Rates', 'Clear prices for common heating and plumbing visits.', 'assets/images/boiler-repair.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('book-a-visit', 'hero-1', 'Book A Visit', 'Book a visit with one of our expert engineers through our online booking page.', 'assets/images/book-2.png', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('contact', 'hero-1', 'Contact Us', 'Choose how you would like to contact the Warm Right team.', 'assets/images/contact.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('testimonals', 'hero-1', 'Customer Testimonials', 'See what our customers have to say about Warm Right.', 'assets/images/testimonials.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('testimonial-submit', 'hero-1', 'Send A Testimonial', 'Share your feedback and photos from your Warm Right visit.', 'assets/images/testimonials.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true)
+on conflict (page_key, hero_key) do nothing;
 
 insert into public.site_settings (setting_key, setting_value)
 values ('testimonial_team_email', 'info@warmright.uk')

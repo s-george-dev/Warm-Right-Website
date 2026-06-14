@@ -14,6 +14,7 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ["SMTP_USER"]
 SMTP_PASS = os.environ["SMTP_PASS"]
 SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER)
+SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "FieldHub Support")
 BATCH_SIZE = int(os.environ.get("EMAIL_OUTBOX_BATCH_SIZE", "10"))
 
 
@@ -73,7 +74,7 @@ def mark_email(row_id, status, error_message=""):
 
 def build_message(row):
     message = EmailMessage()
-    message["From"] = row.get("from_email") or SMTP_FROM
+    message["From"] = format_from(row.get("from_email") or SMTP_FROM)
     message["To"] = row["to_email"]
     message["Subject"] = row["subject"]
     message.set_content(row.get("text_body") or "")
@@ -83,6 +84,13 @@ def build_message(row):
         message.add_alternative(html_body, subtype="html")
 
     return message
+
+
+def format_from(value):
+    value = (value or SMTP_FROM).strip()
+    if "<" in value and ">" in value:
+        return value
+    return f"{SMTP_FROM_NAME} <{value}>"
 
 
 def send_message(message):

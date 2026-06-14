@@ -10,7 +10,7 @@ window.loadAdminHeader = async function(session) {
         const partialsPath = siteRoot + "partials/";
 
         // Fetch using the absolute root path to avoid relative directory errors
-        const response = await fetch(partialsPath + 'admin-header.html');
+        const response = await fetch(partialsPath + 'admin-header.html?v=20260614c', { cache: 'no-store' });
         const html = await response.text();
         container.innerHTML = html;
 
@@ -20,6 +20,9 @@ window.loadAdminHeader = async function(session) {
         // 3. SET PAGE TITLE
         const titleEl = document.getElementById('nav-page-title');
         if (titleEl) titleEl.textContent = window.adminPageTitle || "Admin";
+
+        // 3b. WEBSITE MANAGEMENT CHILD NAV
+        renderWebsiteManagementNav();
 
         // 4. SET USER DATA & AVATAR
         if (session && session.user) {
@@ -81,7 +84,7 @@ window.loadAdminFooter = async function() {
         const siteRoot = getAdminSiteRoot();
         const partialsPath = siteRoot + "partials/";
 
-        const response = await fetch(partialsPath + 'admin-footer.html');
+        const response = await fetch(partialsPath + 'admin-footer.html?v=20260614c', { cache: 'no-store' });
         const html = await response.text();
         container.innerHTML = html;
 
@@ -144,6 +147,39 @@ window.getCurrentUserRole = async function() {
 
     return data?.role || null;
 };
+
+function renderWebsiteManagementNav() {
+    const pages = [
+        { file: 'rates.html', label: 'Manage Rates' },
+        { file: 'offers-admin.html', label: 'Manage Offers' },
+        { file: 'content-cards-admin.html', label: 'Content Cards' },
+        { file: 'hero-admin.html', label: 'Hero Pictures' },
+        { file: 'testimonials-admin.html', label: 'Testimonials' },
+        { file: 'site-management.html', label: 'Pages & Carousels' },
+        { file: 'coverage-admin.html', label: 'Coverage Map' },
+        { file: 'website-file-explorer.html', label: 'File Explorer' }
+    ];
+    const currentFile = window.location.pathname.split('/').pop();
+    if (!pages.some(page => page.file === currentFile)) return;
+    if (document.getElementById('website-management-nav')) return;
+
+    const titleEl = document.getElementById('nav-page-title');
+    if (titleEl) titleEl.textContent = 'WarmHub - Website Management';
+
+    const nav = document.createElement('nav');
+    nav.id = 'website-management-nav';
+    nav.className = 'website-management-nav admin-tab-strip';
+    nav.setAttribute('aria-label', 'Website management tools');
+    nav.innerHTML = `
+        <a class="admin-tab-link admin-tab-back" href="${getAdminUrl('admin-landed.html')}#tab-website">&lt; Back</a>
+        ${pages.map(page => `
+            <a class="admin-tab-link ${page.file === currentFile ? 'is-active' : ''}" href="${getAdminUrl(page.file)}">${page.label}</a>
+        `).join('')}
+    `;
+
+    const header = document.getElementById('admin-header-container');
+    if (header) header.appendChild(nav);
+}
 
 // Function to protect pages based on role
 window.requireRole = async function(allowedRoles) {

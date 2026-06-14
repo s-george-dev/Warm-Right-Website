@@ -6,12 +6,12 @@
   <title>WarmHub - Testimonials | Warm Right Ltd</title>
       <link rel="icon" href="../assets/images/favicon.png">
 
-  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/admin.css?v=20260614c">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <script>window.adminPageTitle = "WarmHub - Testimonials";</script>
-  <script src="../assets/js/admin-include.js"></script>
+  <script src="../assets/js/admin-include.js?v=20260614c"></script>
   
   <style>
     :root {
@@ -98,8 +98,12 @@
     <div id="table-view">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin:0">Customer Testimonials</h2>
-        <button id="add-btn" class="btn-accent" onclick="showFormMode()">+ New Testimonial</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn-primary" onclick="triggerEmailOutbox()">Send Queued Emails</button>
+          <button id="add-btn" class="btn-accent" onclick="showFormMode()">+ New Testimonial</button>
+        </div>
       </div>
+      <p id="email-outbox-status" style="margin:-10px 0 18px; min-height:20px; font-weight:700;"></p>
 
       <section class="pending-panel">
         <h3 style="margin:0 0 10px 0;">Pending Authorisation</h3>
@@ -329,6 +333,20 @@
           </td>
         </tr>
       `).join('');
+    }
+
+    async function triggerEmailOutbox() {
+      const status = document.getElementById('email-outbox-status');
+      status.style.color = 'var(--primary-blue)';
+      status.textContent = 'Starting email sender...';
+      const { error } = await window.db.functions.invoke('trigger-email-outbox', { body: {} });
+      if (error) {
+        status.style.color = '#ef4444';
+        status.textContent = error.message || 'Could not start email sender.';
+        return;
+      }
+      status.style.color = '#166534';
+      status.textContent = 'Email sender started. Check GitHub Actions for the run result.';
     }
 
     async function loadTestimonials() {

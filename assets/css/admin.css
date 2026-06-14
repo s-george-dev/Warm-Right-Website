@@ -1,4 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --admin-font: "Poppins", "Segoe UI", Inter, Arial, sans-serif;
+}
+
 /* Navigation Dropdown Support */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family: var(--admin-font) !important;
+  min-width: 0;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: var(--admin-font) !important;
+}
+
+.admin-top-nav,
+.admin-top-nav *,
+.admin-tab-strip,
+.admin-tab-strip *,
+.tab-buttons,
+.tab-buttons * {
+  box-sizing: border-box;
+  font-family: var(--admin-font) !important;
+  font-synthesis: none;
+}
+
 .dropdown-menu-box {
   position: absolute;
   top: 100%;
@@ -22,15 +56,160 @@
 }
 .dropdown-menu-box a:hover { background: #f4f7f6; color: #004a99; }
 
-/* Flex alignment for the injected nav */
-nav {
-  background: #fff;
-  padding: 10px 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  font-family: 'Segoe UI', sans-serif;
+.admin-top-nav {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 74px !important;
+  padding: 10px 30px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f6 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08) !important;
+  color: #111827 !important;
+  line-height: 1.2 !important;
+}
+
+.admin-nav-left,
+.admin-nav-right,
+.admin-nav-user {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.admin-nav-left {
+  gap: 15px !important;
+  min-width: 0 !important;
+}
+
+.admin-nav-right {
+  gap: 15px !important;
+  flex: 0 0 auto !important;
+}
+
+.admin-nav-logo {
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+.admin-nav-logo img {
+  display: block !important;
+  width: auto !important;
+  height: 50px !important;
+  max-width: none !important;
+  object-fit: contain !important;
+}
+
+.admin-nav-brand {
+  color: #111827 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.admin-nav-divider {
+  color: #e5e7eb !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+}
+
+.admin-nav-title {
+  color: #004a99 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.admin-nav-user {
+  gap: 12px !important;
+  padding-right: 15px !important;
+  border-right: 1px solid #eee !important;
+}
+
+.admin-nav-name {
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+
+.admin-nav-avatar {
+  display: block !important;
+  width: 38px !important;
+  height: 38px !important;
+  border: 2px solid #f0f0f0 !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+.admin-nav-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 64px !important;
+  min-height: 38px !important;
+  padding: 0 18px !important;
+  margin: 0 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  color: #004a99 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+
+.admin-nav-button:hover {
+  background: #f3f6fb !important;
+  border-color: #c7d2e5 !important;
+  color: #004a99 !important;
+}
+
+.admin-nav-logout {
+  min-width: 80px !important;
+  border-color: #ef4444 !important;
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+
+.admin-nav-logout:hover {
+  border-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+.admin-nav-quicklinks {
+  position: relative !important;
+}
+
+.admin-nav-dropdown {
+  display: none;
+  position: absolute !important;
+  top: 110% !important;
+  right: 0 !important;
+  min-width: 190px !important;
+  padding: 10px 0 !important;
+  border: 1px solid #eee !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+  z-index: 1000 !important;
+}
+
+.admin-nav-dropdown hr {
+  border: 0 !important;
+  border-top: 1px solid #eee !important;
+  margin: 5px 0 !important;
 }
 /* Buttons */
     button { 
@@ -47,7 +226,75 @@ nav {
     .btn-accent:hover { background: #e67e00; }
     .btn-outline { background: transparent; border: 1px solid #ccc; color: #666; }
     .btn-outline:hover { background: #eee; }
-    .btn-danger { background: #ef4444; color: white; }
+.btn-danger { background: #ef4444; color: white; }
+
+.admin-tab-strip,
+.tab-buttons {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  justify-content: flex-start !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  width: 100% !important;
+  padding: 0 30px 3px !important;
+  box-sizing: border-box;
+  background: #fff;
+  border-top: 1px solid #eef2f6;
+  box-shadow: 0 7px 10px -10px rgba(0, 0, 0, 0.22);
+}
+
+.admin-tab-link,
+.tab-btn {
+  display: inline-flex !important;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 45px !important;
+  padding: 0 18px !important;
+  border: 0 !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 8px 8px 0 0 !important;
+  background: transparent !important;
+  color: #333 !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-tab-link:visited {
+  color: #333 !important;
+  text-decoration: none !important;
+}
+
+.admin-tab-link:hover,
+.tab-btn:hover {
+  color: #004a99 !important;
+  background: #e9ecef !important;
+}
+
+.admin-tab-link.is-active,
+.admin-tab-link.is-active:visited,
+.tab-btn.active {
+  color: #004a99 !important;
+  border-bottom-color: #004a99 !important;
+  background: transparent !important;
+}
+
+.admin-tab-back {
+  color: #004a99 !important;
+}
+
+.admin-tab-back::after {
+  content: "";
+  width: 1px;
+  height: 22px;
+  margin-left: 18px;
+  background: #dbe2ea;
+}
 
 
 
@@ -56,7 +303,7 @@ nav {
 ========================================================= */
 @media (max-width: 768px) {
     /* 1. SLIM TOP BAR */
-    nav[style] {
+    .admin-top-nav {
         padding: 10px 15px !important;
         position: fixed !important;
         top: 0; left: 0; right: 0;
@@ -96,8 +343,8 @@ nav {
 
     /* 4. THE SLIDE-OUT SIDEBAR */
     /* Pull the Hub Button and Links Container off-screen */
-    .nav-right > button:not(#nav-logout-btn),
-    .nav-right > div[style*="relative"] {
+    .admin-nav-right > button:not(#nav-logout-btn),
+    .admin-nav-right > .admin-nav-quicklinks {
         position: fixed !important;
         left: -300px; 
         width: 250px !important;
@@ -110,7 +357,7 @@ nav {
     }
 
     /* Slot the Hub Button at the top of the sidebar */
-    .nav-right > button:not(#nav-logout-btn) {
+    .admin-nav-right > button:not(#nav-logout-btn) {
         top: 65px !important; 
         height: 55px !important;
         border-radius: 0 !important;
@@ -121,7 +368,7 @@ nav {
     }
 
     /* Slot the Quick Links below the Hub Button */
-    .nav-right > div[style*="relative"] {
+    .admin-nav-right > .admin-nav-quicklinks {
         top: 120px !important;
         bottom: 0 !important;
     }
@@ -139,8 +386,8 @@ nav {
     .dropdown-menu-box a { padding: 15px 20px !important; border-bottom: 1px solid #f8f9fa !important; font-size: 15px !important;}
 
     /* 5. TOGGLE OPEN STATE */
-    body.sidebar-open .nav-right > button:not(#nav-logout-btn),
-    body.sidebar-open .nav-right > div[style*="relative"] {
+    body.sidebar-open .admin-nav-right > button:not(#nav-logout-btn),
+    body.sidebar-open .admin-nav-right > .admin-nav-quicklinks {
         left: 0 !important;
     }
 }
