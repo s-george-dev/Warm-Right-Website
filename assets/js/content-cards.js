@@ -4,7 +4,8 @@
     const isGitHub = window.location.hostname.includes('github.io');
     const usableParts = isGitHub && parts.length > 1 ? parts.slice(1) : parts;
     const file = usableParts[usableParts.length - 1] || 'index.html';
-    return file.replace(/\.html$/, '') === 'index' ? 'home' : file.replace(/\.html$/, '');
+    const key = file.replace(/\.html$/, '') === 'index' ? 'home' : file.replace(/\.html$/, '');
+    return key === 'testimonals' ? 'testimonials' : key;
   }
 
   function escapeHtml(value) {
@@ -13,10 +14,15 @@
 
   function resolveUrl(url) {
     if (!url) return '';
-    if (/^(https?:|data:|blob:|\/)/i.test(url)) return url;
+    if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    const cleanUrl = url.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    if (cleanUrl.startsWith('assets/images/')) {
+      const encodedPath = cleanUrl.split('/').map(encodeURIComponent).join('/');
+      return `https://raw.githubusercontent.com/s-george-dev/Warm-Right-Website/master/${encodedPath}`;
+    }
     const isGitHub = window.location.hostname.includes('github.io');
     const siteRoot = isGitHub ? '/Warm-Right-Website/' : '/';
-    return siteRoot + url.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    return siteRoot + cleanUrl;
   }
 
   const FALLBACK_CARDS = {
@@ -49,6 +55,13 @@
       body_html: 'Choose the option that suits you best - whether you would like to call us, email, or send a message through our form.',
       image_url: 'assets/images/contact.jpg',
       show_button: false
+    },
+    'testimonials:card-1': {
+      body_html: 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.',
+      image_url: 'assets/images/testimonials.jpg',
+      show_button: true,
+      button_label: 'Send Us Your Testimonial',
+      button_url: 'testimonial-submit.html'
     },
     'testimonals:card-1': {
       body_html: 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.',

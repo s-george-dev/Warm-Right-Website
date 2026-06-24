@@ -193,6 +193,8 @@
         <h2>Choose Image</h2>
         <div style="display:flex; gap:10px;">
           <input id="image-search" type="search" placeholder="Search images..." oninput="renderImageBrowser()">
+          <label class="btn-accent" for="image-browser-upload">Upload Image</label>
+          <input id="image-browser-upload" type="file" accept="image/*" hidden onchange="uploadImageFromBrowser(this.files[0])">
           <button class="btn-outline" onclick="closeImageBrowser()">Close</button>
         </div>
       </div>
@@ -225,7 +227,7 @@
       { key:'schedule-of-rates', title:'Our Rates', url:'../schedule-of-rates.html' },
       { key:'book-a-visit', title:'Book A Visit', url:'../book-a-visit.html' },
       { key:'contact', title:'Contact Us', url:'../contact.html' },
-      { key:'testimonals', title:'Testimonials', url:'../testimonals.html' },
+      { key:'testimonials', title:'Testimonials', url:'../testimonials.html' },
       { key:'testimonial-submit', title:'Submit Testimonial', url:'../testimonial-submit.html' }
     ];
     let currentSession = null;
@@ -426,7 +428,7 @@
         'schedule-of-rates': { title:'Our Rates', subtitle:'Clear prices for common heating and plumbing visits.', image_url:'assets/images/boiler-repair.jpg' },
         'book-a-visit': { title:'Book A Visit', subtitle:'Book a visit with one of our expert engineers through our online booking page.', image_url:'assets/images/book-2.png' },
         contact: { title:'Contact Us', subtitle:'Choose how you would like to contact the Warm Right team.', image_url:'assets/images/contact.jpg' },
-        testimonals: { title:'Customer Testimonials', subtitle:'See what our customers have to say about Warm Right.', image_url:'assets/images/testimonials.jpg' },
+        testimonials: { title:'Customer Testimonials', subtitle:'See what our customers have to say about Warm Right.', image_url:'assets/images/testimonials.jpg' },
         'testimonial-submit': { title:'Send A Testimonial', subtitle:'Share your feedback and photos from your Warm Right visit.', image_url:'assets/images/testimonials.jpg' }
       };
       const defaultValues = defaults[page.key] || {};
@@ -536,9 +538,45 @@
       closeImageBrowser();
       updatePreview();
     }
-    async function callImageFunction(action) {
+    async function uploadImageFromBrowser(file) {
+      if (!file) return;
+      const input = document.getElementById('image-browser-upload');
+      const status = document.getElementById('image-status');
+      status.textContent = `Uploading ${file.name}...`;
+      try {
+        const data = await callImageFunction('upload', {
+          name: file.name,
+          contentBase64: await fileToBase64(file),
+          message: `Upload hero image ${file.name}`
+        }, 'POST');
+        const path = data.file?.path || `assets/images/${file.name}`;
+        document.getElementById('image_url').value = path;
+        await openImageBrowser();
+        closeImageBrowser();
+        updatePreview();
+        setStatus(`${file.name} uploaded and selected.`);
+      } catch (err) {
+        status.textContent = `Upload failed: ${err.message}`;
+      } finally {
+        input.value = '';
+      }
+    }
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = () => reject(new Error('Could not read the selected image.'));
+        reader.readAsDataURL(file);
+      });
+    }
+    async function callImageFunction(action, body = null, method = 'GET') {
       const response = await fetch(`${GITHUB_IMAGES_FUNCTION}?action=${encodeURIComponent(action)}`, {
-        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+        method,
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {})
+        },
+        body: body ? JSON.stringify(body) : undefined,
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
@@ -548,12 +586,24 @@
     function imageSrcForAdmin(path) {
       if (!path) return '../assets/images/no-image.jpg';
       if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      const githubUrl = githubImageUrl(path);
+      if (githubUrl) return githubUrl;
       return path.startsWith('../') ? path : `../${path.replace(/^\/+/, '')}`;
     }
     function imageUrlForCss(path) {
       if (!path) return '/assets/images/home-hero.jpg';
       if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      const githubUrl = githubImageUrl(path);
+      if (githubUrl) return githubUrl;
       return '/' + path.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    }
+    function githubImageUrl(path) {
+      const cleanPath = String(path || '').replace(/^(\.\/|\.\.\/|\/)+/, '');
+      const file = imageFiles.find(item => (item.webPath || `assets/images/${item.name}`) === cleanPath);
+      if (file?.downloadUrl) return file.downloadUrl;
+      return cleanPath.startsWith('assets/images/')
+        ? `https://raw.githubusercontent.com/s-george-dev/Warm-Right-Website/master/${cleanPath.split('/').map(encodeURIComponent).join('/')}`
+        : '';
     }
     function setStatus(message) { document.getElementById('status').textContent = message; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }

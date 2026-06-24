@@ -2,3 +2,12 @@ project_id = "axampuprcnauxbbijmmt"
 
 [functions.github-images]
 verify_jwt = false
+
+[functions.testimonial-title-suggestion]
+verify_jwt = false
+
+[functions.feedback-submission]
+verify_jwt = false
+
+[functions.site-analytics]
+verify_jwt = false

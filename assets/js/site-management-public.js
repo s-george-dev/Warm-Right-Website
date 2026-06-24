@@ -7,7 +7,8 @@
     try {
       path = new URL(path, window.location.origin).pathname;
     } catch (_) {}
-    return path.replace(/^\/warm\//, '/').replace(/\/+$/, '') || '/';
+    const normalized = path.replace(/^\/warm\//, '/').replace(/\/+$/, '') || '/';
+    return normalized === '/testimonals.html' ? '/testimonials.html' : normalized;
   }
 
   function byUrl(rows) {
@@ -199,9 +200,14 @@
     });
   }
 
+  function revealHeader() {
+    document.querySelector('#header .header')?.classList.add('loaded');
+  }
+
   async function loadSiteManagement() {
     if (!window.db) {
       markCarouselsReady();
+      revealHeader();
       return;
     }
 
@@ -217,6 +223,8 @@
     } catch (err) {
       console.warn('Site management data unavailable; using static content.', err);
       markCarouselsReady();
+    } finally {
+      revealHeader();
     }
   }
 

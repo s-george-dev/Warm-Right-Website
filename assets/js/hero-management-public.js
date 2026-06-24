@@ -4,7 +4,8 @@
     const isGitHub = window.location.hostname.includes('github.io');
     const usableParts = isGitHub && parts.length > 1 ? parts.slice(1) : parts;
     const file = usableParts[usableParts.length - 1] || 'index.html';
-    return file.replace(/\.html$/, '') === 'index' ? 'home' : file.replace(/\.html$/, '');
+    const key = file.replace(/\.html$/, '') === 'index' ? 'home' : file.replace(/\.html$/, '');
+    return key === 'testimonals' ? 'testimonials' : key;
   }
 
   function escapeHtml(value) {
@@ -43,6 +44,7 @@
     'schedule-of-rates': [{ title:'Our Rates', subtitle:'Clear prices for common heating and plumbing visits.', image_url:'assets/images/boiler-repair.jpg' }],
     'book-a-visit': [{ title:'Book A Visit', subtitle:'Book a visit with one of our expert engineers through our online booking page.', image_url:'assets/images/book-2.png' }],
     contact: [{ title:'Contact Us', subtitle:'Choose how you would like to contact the Warm Right team.', image_url:'assets/images/contact.jpg' }],
+    testimonials: [{ title:'Customer Testimonials', subtitle:'See what our customers have to say about Warm Right.', image_url:'assets/images/testimonials.jpg' }],
     testimonals: [{ title:'Customer Testimonials', subtitle:'See what our customers have to say about Warm Right.', image_url:'assets/images/testimonials.jpg' }],
     'testimonial-submit': [{ title:'Send A Testimonial', subtitle:'Share your feedback and photos from your Warm Right visit.', image_url:'assets/images/testimonials.jpg' }]
   };

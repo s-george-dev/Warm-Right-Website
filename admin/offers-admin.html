@@ -106,6 +106,8 @@
         <h2 style="margin:0">Choose Website Image</h2>
         <div style="display:flex; gap:10px; align-items:center;">
           <input id="image-search" type="search" placeholder="Search images..." oninput="renderImageBrowser()">
+          <label class="btn-accent" for="image-browser-upload">Upload Image</label>
+          <input id="image-browser-upload" type="file" accept="image/*" hidden onchange="uploadImageFromBrowser(this.files[0])">
           <button class="btn-outline" onclick="closeImageBrowser()">Close</button>
         </div>
       </div>
@@ -136,7 +138,18 @@
     function imageSrcForAdmin(path) {
       if (!path) return '../assets/images/no-image.jpg';
       if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      const githubUrl = githubImageUrl(path);
+      if (githubUrl) return githubUrl;
       return path.startsWith('../') ? path : `../${path.replace(/^\/+/, '')}`;
+    }
+
+    function githubImageUrl(path) {
+      const cleanPath = String(path || '').replace(/^(\.\/|\.\.\/|\/)+/, '');
+      const file = imageFiles.find(item => (item.webPath || `assets/images/${item.name}`) === cleanPath);
+      if (file?.downloadUrl) return file.downloadUrl;
+      return cleanPath.startsWith('assets/images/')
+        ? `https://raw.githubusercontent.com/s-george-dev/Warm-Right-Website/master/${cleanPath.split('/').map(encodeURIComponent).join('/')}`
+        : '';
     }
 
     function escapeHtml(value) {
@@ -297,6 +310,25 @@
       document.getElementById('imagePreview').src = imageSrcForAdmin(path);
       document.getElementById('image').value = '';
       closeImageBrowser();
+    }
+
+    async function uploadImageFromBrowser(file) {
+      if (!file) return;
+      const input = document.getElementById('image-browser-upload');
+      const status = document.getElementById('image-browser-status');
+      status.textContent = `Uploading ${file.name}...`;
+      try {
+        const path = await uploadImage(file);
+        document.getElementById('image_url').value = path;
+        document.getElementById('imagePreview').src = imageSrcForAdmin(path);
+        document.getElementById('image').value = '';
+        await openImageBrowser();
+        closeImageBrowser();
+      } catch (err) {
+        status.textContent = `Upload failed: ${err.message}`;
+      } finally {
+        input.value = '';
+      }
     }
 
     async function saveOffer() {

@@ -38,6 +38,8 @@ The team notification email can be edited in WarmHub:
 ```bash
 supabase functions deploy testimonial-submission
 supabase functions deploy trigger-email-outbox
+supabase functions deploy testimonial-title-suggestion
+supabase functions deploy feedback-submission
 ```
 
 ## GitHub Email Outbox Sender
@@ -78,3 +80,58 @@ The testimonial submission function queues both:
 - a customer thank-you email
 
 It then triggers the GitHub email sender workflow automatically. The admin page also has a manual `Send Queued Emails` button.
+
+## AI testimonial title suggestions
+
+The public testimonial form can suggest a short 3-7 word title from the customer's testimonial.
+
+Create a Gemini API key in Google AI Studio, then add it as a Supabase secret:
+
+```bash
+supabase secrets set GEMINI_API_KEY="..."
+```
+
+Optional model override:
+
+```bash
+supabase secrets set GEMINI_MODEL="gemini-2.0-flash"
+```
+
+The API key is only used inside the `testimonial-title-suggestion` Edge Function and is not exposed in the browser.
+
+## Feedback survey page
+
+The dedicated feedback survey lives at:
+
+```text
+feedback.html
+```
+
+It can be hosted on a subdomain such as `feedback.warmright.uk` by pointing that subdomain at the same deployed site and using this page as the entry point.
+
+Run the latest SQL in `supabase-site-management.sql` before deploying. It adds:
+
+- `feedback_surveys`
+- `job_number` and `customer_address` fields on `testimonial_submissions`
+
+The feedback survey submits through the `feedback-submission` Edge Function and queues an email through the existing GitHub email outbox workflow.
+
+## Google address finder
+
+The address finder uses Google Maps Places in the browser. Create a browser API key in Google Cloud/Google Maps Platform, enable the Places API, and restrict the key to your site domains.
+
+For the intended setup, include these referrers:
+
+```text
+https://warmright.fieldhub.uk/*
+https://feedback.warmright.uk/*
+http://localhost:6767/*
+```
+
+Then set the key in:
+
+```text
+assets/js/site-config.js
+```
+
+The key is public by design, so keep it browser-restricted in Google Cloud.

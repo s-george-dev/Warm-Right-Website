@@ -25,24 +25,89 @@
     }
     .rating-picker {
       display: flex;
-      gap: 8px;
+      flex-direction: row-reverse;
+      justify-content: center;
       margin: 8px 0 18px;
+      perspective: 20em;
     }
-    .rating-picker button {
-      width: 46px;
-      height: 46px;
-      border-radius: 999px;
-      border: 1px solid #d8e2ee;
+    .rating-picker input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .rating-label {
+      display: flex;
+      box-sizing: border-box;
+      margin-left: -1px;
+      padding: 12px;
+      border: 1px solid rgba(18, 59, 117, 0.16);
       background: #fff;
-      color: #153a70;
-      font-size: 22px;
-      line-height: 1;
       cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  box-shadow 0.3s ease;
     }
-    .rating-picker button.active {
-      background: #ffd166;
-      border-color: #e08100;
-      color: #062940;
+    .rating-label:nth-of-type(4) { transition-delay: 0.075s; }
+    .rating-label:nth-of-type(3) { transition-delay: 0.15s; }
+    .rating-label:nth-of-type(2) { transition-delay: 0.225s; }
+    .rating-label:nth-of-type(1) { transition-delay: 0.3s; }
+    .rating-label-icon {
+      width: 34px;
+      height: 34px;
+      fill: rgba(18, 59, 117, 0.32);
+      transition: fill 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .rating-picker input[type="radio"]:checked ~ .rating-label,
+    .rating-picker input[type="radio"]:focus-visible ~ .rating-label,
+    .rating-picker input[type="radio"]:hover ~ .rating-label {
+      background-color: #fff9e8;
+      transform: rotateY(180deg);
+      box-shadow: inset 0 0 0 1px rgba(255, 176, 0, 0.26);
+    }
+    .rating-picker input[type="radio"]:checked ~ .rating-label .rating-label-icon,
+    .rating-picker input[type="radio"]:focus-visible ~ .rating-label .rating-label-icon,
+    .rating-picker input[type="radio"]:hover ~ .rating-label .rating-label-icon {
+      fill: #ffb000;
+    }
+    .rating-sparks {
+      position: relative;
+    }
+    .rating-sparks::before {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      left: 50%;
+      top: 50%;
+      width: 400%;
+      height: 400%;
+      opacity: 1;
+      transform: translate(-50%, -50%);
+      background-image:
+        radial-gradient(circle, #ffb000 70%, transparent 71%),
+        radial-gradient(circle, #ffd166 70%, transparent 71%),
+        radial-gradient(circle, #ffb000 70%, transparent 71%),
+        radial-gradient(circle, #ffd166 70%, transparent 71%),
+        radial-gradient(circle, #ffb000 70%, transparent 71%),
+        radial-gradient(circle, #ffd166 70%, transparent 71%),
+        radial-gradient(circle, #ffb000 70%, transparent 71%),
+        radial-gradient(circle, #ffd166 70%, transparent 71%);
+      background-position: 50% 50%;
+      background-repeat: no-repeat;
+      background-size: 0.25em 0.25em;
+      transition: all 0s ease-out;
+    }
+    .rating-picker input[type="radio"]:first-of-type:checked + .rating-label::before {
+      opacity: 0;
+      background-size: 4% 4%, 6% 6%, 4% 4%, 8% 8%, 6% 6%, 4% 4%, 6% 6%, 8% 8%;
+      background-position: 10% 20%, 80% 30%, 30% 80%, 90% 70%, 50% 10%, 10% 80%, 70% 90%, 50% 90%;
+      transition-duration: 0.6s;
+      transition-delay: 0.39s;
+    }
+    .rating-picker input[type="radio"]:focus-visible + .rating-label {
+      outline: 3px solid rgba(18, 59, 117, 0.22);
+      outline-offset: 2px;
     }
     .preview-list {
       display: grid;
@@ -101,6 +166,117 @@
       font-weight: 700;
       color: #0a2c66;
     }
+    .address-finder-wrap {
+      position: relative;
+    }
+    .address-suggestions {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #d8e2ee;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+    }
+    .address-suggestions.active {
+      display: block;
+    }
+    .address-suggestion {
+      display: block;
+      width: 100%;
+      padding: 11px 14px;
+      border: 0;
+      border-bottom: 1px solid #eef2f7;
+      background: #fff;
+      color: #10233f;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .address-suggestion:hover,
+    .address-suggestion:focus {
+      background: #f3f7fb;
+      outline: none;
+    }
+    .address-suggestion strong {
+      display: block;
+      color: #123b75;
+      font-weight: 800;
+    }
+    .address-suggestion span {
+      display: block;
+      margin-top: 2px;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    .ai-title-field {
+      position: relative;
+    }
+    .ai-title-field input {
+      width: 100%;
+      padding-right: 54px;
+    }
+    .ai-title-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .ai-title-action {
+      display: none;
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid #d8e2ee;
+      border-radius: 8px;
+      background: #fff;
+      color: #123b75;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ai-title-action.active {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ai-title-action:disabled {
+      opacity: 0.62;
+      cursor: wait;
+    }
+    .ai-title-input-spinner {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin-top: -10px;
+      margin-left: -10px;
+      border-radius: 999px;
+      border: 3px solid #dbeafe;
+      border-top-color: #123b75;
+      animation: spin 0.9s linear infinite;
+      pointer-events: none;
+    }
+    .ai-title-field.is-generating .ai-title-input-spinner {
+      display: block;
+    }
+    .ai-title-error {
+      display: none;
+      margin: -6px 0 16px;
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .ai-title-error.active {
+      display: block;
+    }
     .submit-overlay {
       position: fixed;
       inset: 0;
@@ -136,16 +312,23 @@
         padding: 18px;
       }
       .rating-picker {
-        justify-content: space-between;
+        justify-content: center;
       }
-      .rating-picker button {
-        width: 42px;
-        height: 42px;
+      .rating-label {
+        padding: 9px;
+      }
+      .rating-label-icon {
+        width: 29px;
+        height: 29px;
       }
       .photo-picker-actions,
       .photo-picker-btn,
+      .ai-title-row,
       form button[type="submit"] {
         width: 100%;
+      }
+      .ai-title-row {
+        grid-template-columns: 1fr;
       }
       .preview-list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -161,7 +344,7 @@
   <main class="container section">
     <h2 class="section-heading card">Share Your Experience</h2>
     <section class="testimonial-submit-panel">
-      <form id="testimonial-submit-form" novalidate>
+      <form id="testimonial-submit-form" novalidate autocomplete="off">
         <label for="customer_name">Your name</label>
         <input id="customer_name" name="customer_name" required autocomplete="name">
 
@@ -171,21 +354,60 @@
         <label for="customer_phone">Phone number</label>
         <input id="customer_phone" name="customer_phone" autocomplete="tel">
 
-        <label>Rating</label>
-        <div class="rating-picker" id="rating-picker" aria-label="Rating out of 5">
-          <button type="button" data-rating="1" aria-label="1 star">&#9733;</button>
-          <button type="button" data-rating="2" aria-label="2 stars">&#9733;</button>
-          <button type="button" data-rating="3" aria-label="3 stars">&#9733;</button>
-          <button type="button" data-rating="4" aria-label="4 stars">&#9733;</button>
-          <button type="button" data-rating="5" aria-label="5 stars">&#9733;</button>
-        </div>
-        <input type="hidden" id="rating" name="rating" value="5">
+        <label for="job_number">Job number <span style="color:#64748b;font-weight:500;">(if applicable)</span></label>
+        <input id="job_number" name="job_number" autocomplete="off">
 
-        <label for="subject">Short title</label>
-        <input id="subject" name="subject" maxlength="90" placeholder="e.g. Brilliant boiler service">
+        <label for="customer_address">Address</label>
+        <div class="address-finder-wrap">
+          <input id="customer_address" name="wr_visit_location" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" placeholder="Start typing and choose your address from the suggestions" aria-controls="address-suggestions" aria-expanded="false">
+          <div id="address-suggestions" class="address-suggestions" role="listbox"></div>
+        </div>
+
+        <label>Rating</label>
+        <svg style="display:none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <symbol id="rating-star" viewBox="0 0 32 32">
+            <path d="M12.224 11.623L16 0l3.776 11.623H32l-9.888 6.865 3.776 11.417L16 22.668 6.112 29.85l3.776-11.362L0 11.623h12.224"></path>
+          </symbol>
+        </svg>
+        <div class="rating-picker" id="rating-picker" aria-label="Rating out of 5">
+          <input type="radio" id="rating-5" name="rating" value="5" checked>
+          <label class="rating-label rating-sparks" for="rating-5" aria-label="5 stars">
+            <svg class="rating-label-icon"><use href="#rating-star"></use></svg>
+          </label>
+
+          <input type="radio" id="rating-4" name="rating" value="4">
+          <label class="rating-label" for="rating-4" aria-label="4 stars">
+            <svg class="rating-label-icon"><use href="#rating-star"></use></svg>
+          </label>
+
+          <input type="radio" id="rating-3" name="rating" value="3">
+          <label class="rating-label" for="rating-3" aria-label="3 stars">
+            <svg class="rating-label-icon"><use href="#rating-star"></use></svg>
+          </label>
+
+          <input type="radio" id="rating-2" name="rating" value="2">
+          <label class="rating-label" for="rating-2" aria-label="2 stars">
+            <svg class="rating-label-icon"><use href="#rating-star"></use></svg>
+          </label>
+
+          <input type="radio" id="rating-1" name="rating" value="1">
+          <label class="rating-label" for="rating-1" aria-label="1 star">
+            <svg class="rating-label-icon"><use href="#rating-star"></use></svg>
+          </label>
+        </div>
 
         <label for="content">Your testimonial</label>
         <textarea id="content" name="content" rows="7" required maxlength="1800"></textarea>
+
+        <label for="subject">Short title</label>
+        <div class="ai-title-row">
+          <div id="ai-title-field" class="ai-title-field">
+            <input id="subject" name="subject" maxlength="90" placeholder="Write your testimonial first" required disabled>
+            <span class="ai-title-input-spinner" aria-hidden="true"></span>
+          </div>
+          <button type="button" id="regenerate-title-btn" class="ai-title-action">Regenerate Title</button>
+        </div>
+        <p id="ai-title-error" class="ai-title-error" aria-live="polite"></p>
 
         <label for="testimonial_images">Photos</label>
         <p style="margin:0 0 8px;color:#64748b;font-size:14px;">You can add up to 4 photos.</p>
@@ -209,9 +431,14 @@
       <div class="spinner"></div>
       <h2 id="submit-overlay-title" style="margin:0 0 8px;color:#062940;">Submitting...</h2>
       <p id="submit-overlay-message" style="margin:0;color:#475569;line-height:1.6;">Please wait while we send your feedback.</p>
+      <div id="feedback-followup-actions" style="display:none;margin-top:20px;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button type="button" class="photo-picker-btn" onclick="continueToFeedbackSurvey()">Answer Survey</button>
+        <button type="button" class="photo-picker-btn" onclick="window.location.href='index.html'">No Thanks</button>
+      </div>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/site-config.js?v=1"></script>
   <script>
     window.db = window.db || window.supabase.createClient(
       'https://axampuprcnauxbbijmmt.supabase.co',
@@ -219,19 +446,16 @@
     );
     let selectedRating = 5;
     let selectedPhotos = [];
+    let lastSubmittedTestimonial = null;
+    let testimonialAutocompleteService = null;
+    let testimonialPlacesService = null;
+    let testimonialAddressTimer = null;
 
-    function setRating(value) {
-      selectedRating = value;
-      document.getElementById('rating').value = value;
-      document.querySelectorAll('#rating-picker button').forEach((btn) => {
-        btn.classList.toggle('active', Number(btn.dataset.rating) <= value);
+    document.querySelectorAll('#rating-picker input[name="rating"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        selectedRating = Number(document.querySelector('#rating-picker input[name="rating"]:checked')?.value || 5);
       });
-    }
-
-    document.querySelectorAll('#rating-picker button').forEach((btn) => {
-      btn.addEventListener('click', () => setRating(Number(btn.dataset.rating)));
     });
-    setRating(5);
 
     function openPhotoPicker() {
       document.getElementById('testimonial_images').click();
@@ -240,6 +464,121 @@
     function openCameraPicker() {
       document.getElementById('testimonial_camera').click();
     }
+
+    function bindTestimonialAddressFinder() {
+      const input = document.getElementById('customer_address');
+      const suggestions = document.getElementById('address-suggestions');
+      const key = window.WARMRIGHT_GOOGLE_MAPS_API_KEY;
+
+      if (!input || !suggestions) return;
+
+      if (!window.google?.maps?.places && key) {
+        window.initTestimonialAddressFinder = bindTestimonialAddressFinder;
+        if (document.getElementById('google-maps-places-script')) return;
+        const script = document.createElement('script');
+        script.id = 'google-maps-places-script';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&callback=initTestimonialAddressFinder`;
+        script.async = true;
+        document.head.appendChild(script);
+        return;
+      }
+
+      if (!window.google?.maps?.places) {
+        return;
+      }
+
+      testimonialAutocompleteService = testimonialAutocompleteService || new google.maps.places.AutocompleteService();
+      testimonialPlacesService = testimonialPlacesService || new google.maps.places.PlacesService(document.createElement('div'));
+
+      input.addEventListener('input', () => requestAddressPredictions(input.value));
+      input.addEventListener('focus', () => requestAddressPredictions(input.value));
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeAddressSuggestions();
+      });
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.address-finder-wrap')) closeAddressSuggestions();
+      });
+    }
+
+    function requestAddressPredictions(value) {
+      const input = document.getElementById('customer_address');
+      const suggestions = document.getElementById('address-suggestions');
+      if (!testimonialAutocompleteService || !input || !suggestions) return;
+
+      clearTimeout(testimonialAddressTimer);
+      const query = String(value || '').trim();
+      if (query.length < 3) {
+        closeAddressSuggestions();
+        return;
+      }
+
+      testimonialAddressTimer = setTimeout(() => {
+        testimonialAutocompleteService.getPlacePredictions({
+          input: query,
+          componentRestrictions: { country: 'gb' },
+          types: ['address'],
+        }, (predictions, status) => {
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions?.length) {
+            closeAddressSuggestions();
+            return;
+          }
+          renderAddressSuggestions(predictions.slice(0, 6));
+        });
+      }, 180);
+    }
+
+    function renderAddressSuggestions(predictions) {
+      const input = document.getElementById('customer_address');
+      const suggestions = document.getElementById('address-suggestions');
+      suggestions.innerHTML = '';
+      predictions.forEach((prediction) => {
+        const main = prediction.structured_formatting?.main_text || prediction.description;
+        const secondary = prediction.structured_formatting?.secondary_text || '';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'address-suggestion';
+        button.setAttribute('role', 'option');
+        button.innerHTML = `<strong>${escapeHtml(main)}</strong>${secondary ? `<span>${escapeHtml(secondary)}</span>` : ''}`;
+        button.addEventListener('click', () => chooseAddressPrediction(prediction));
+        suggestions.appendChild(button);
+      });
+      suggestions.classList.add('active');
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    function chooseAddressPrediction(prediction) {
+      const input = document.getElementById('customer_address');
+      input.value = prediction.description;
+      closeAddressSuggestions();
+
+      if (!testimonialPlacesService || !prediction.place_id) return;
+      testimonialPlacesService.getDetails({
+        placeId: prediction.place_id,
+        fields: ['formatted_address'],
+      }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.formatted_address) {
+          input.value = place.formatted_address;
+        }
+      });
+    }
+
+    function closeAddressSuggestions() {
+      const input = document.getElementById('customer_address');
+      const suggestions = document.getElementById('address-suggestions');
+      if (!suggestions) return;
+      suggestions.classList.remove('active');
+      suggestions.innerHTML = '';
+      if (input) input.setAttribute('aria-expanded', 'false');
+    }
+
+    function loadGoogleAddressFinder() {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindTestimonialAddressFinder);
+        return;
+      }
+      bindTestimonialAddressFinder();
+    }
+    loadGoogleAddressFinder();
 
     function addSelectedFiles(files) {
       const incoming = Array.from(files || []).filter((file) => file.type.startsWith('image/'));
@@ -284,6 +623,144 @@
       addSelectedFiles(event.target.files);
       event.target.value = '';
     });
+
+    let titleGenerationStarted = false;
+    let titleHasGenerated = false;
+    const titlePlaceholder = 'e.g. Brilliant boiler service';
+    const titleWaitingPlaceholder = 'Write your testimonial first';
+    const minimumTitleWords = 8;
+
+    function getTestimonialWordCount() {
+      return document.getElementById('content').value.trim().split(/\s+/).filter(Boolean).length;
+    }
+
+    function updateTitleAvailability() {
+      const subject = document.getElementById('subject');
+      const errorMessage = document.getElementById('ai-title-error');
+      const hasAnyWords = getTestimonialWordCount() > 0;
+
+      if (hasAnyWords) {
+        subject.disabled = false;
+        subject.placeholder = titlePlaceholder;
+        document.getElementById('regenerate-title-btn').classList.toggle('active', titleHasGenerated && getTestimonialWordCount() >= minimumTitleWords);
+        return;
+      }
+
+      titleGenerationStarted = false;
+      titleHasGenerated = false;
+      subject.value = '';
+      subject.disabled = true;
+      subject.readOnly = false;
+      subject.placeholder = titleWaitingPlaceholder;
+      document.getElementById('regenerate-title-btn').classList.remove('active');
+      errorMessage.textContent = '';
+      errorMessage.classList.remove('active');
+    }
+
+    document.getElementById('content').addEventListener('input', () => {
+      titleGenerationStarted = false;
+      updateTitleAvailability();
+    });
+
+    document.getElementById('subject').addEventListener('focus', () => {
+      const subject = document.getElementById('subject');
+      if (!subject.disabled && getTestimonialWordCount() >= minimumTitleWords && !titleGenerationStarted && !subject.value.trim()) {
+        generateShortTitle();
+      }
+    });
+
+    document.getElementById('regenerate-title-btn').addEventListener('click', () => {
+      generateShortTitle(true);
+    });
+
+    updateTitleAvailability();
+
+    async function generateShortTitle(forceRegenerate = false) {
+      const content = document.getElementById('content').value.trim();
+      const subject = document.getElementById('subject');
+      const field = document.getElementById('ai-title-field');
+      const errorMessage = document.getElementById('ai-title-error');
+      const regenerateButton = document.getElementById('regenerate-title-btn');
+
+      if (getTestimonialWordCount() < minimumTitleWords) {
+        updateTitleAvailability();
+        return;
+      }
+
+      titleGenerationStarted = true;
+      errorMessage.textContent = '';
+      errorMessage.classList.remove('active');
+      field.classList.add('is-generating');
+      subject.disabled = true;
+      regenerateButton.disabled = true;
+      subject.placeholder = 'Generating Title';
+      if (forceRegenerate || !subject.value.trim()) subject.value = '';
+
+      try {
+        const { data, error } = await window.db.functions.invoke('testimonial-title-suggestion', {
+          body: {
+            content,
+            rating: selectedRating,
+            customer_name: document.getElementById('customer_name').value.trim(),
+          },
+        });
+
+        if (error) throw new Error(await getFunctionErrorMessage(error));
+        if (!data?.title) throw new Error('No title returned');
+        subject.value = data.title;
+        titleHasGenerated = true;
+        regenerateButton.classList.add('active');
+      } catch (err) {
+        showTitleGenerationError();
+      } finally {
+        field.classList.remove('is-generating');
+        subject.placeholder = titlePlaceholder;
+        subject.disabled = false;
+        regenerateButton.disabled = false;
+      }
+    }
+
+    function showTitleGenerationError() {
+      const subject = document.getElementById('subject');
+      const field = document.getElementById('ai-title-field');
+      const errorMessage = document.getElementById('ai-title-error');
+      titleGenerationStarted = true;
+      subject.disabled = false;
+      subject.placeholder = titlePlaceholder;
+      field.classList.remove('is-generating');
+      errorMessage.textContent = 'Unable to generate title. You can type your own.';
+      errorMessage.classList.add('active');
+      document.getElementById('regenerate-title-btn').classList.toggle('active', titleHasGenerated);
+    }
+
+    async function getFunctionErrorMessage(error) {
+      const fallback = error?.message || 'Sorry, we could not generate a title just now. You can still type your own.';
+      try {
+        const context = error.context;
+        if (!context) return fallback;
+        const clone = typeof context.clone === 'function' ? context.clone() : context;
+        const text = await clone.text();
+        if (!text) return fallback;
+        try {
+          const json = JSON.parse(text);
+          return json.error || json.message || fallback;
+        } catch {
+          return text.slice(0, 180) || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[char]));
+    }
 
     async function fileToPayload(file) {
       const resized = await resizeImageForSubmission(file);
@@ -345,6 +822,8 @@
         customer_name: document.getElementById('customer_name').value.trim(),
         customer_email: document.getElementById('customer_email').value.trim(),
         customer_phone: document.getElementById('customer_phone').value.trim(),
+        job_number: document.getElementById('job_number').value.trim(),
+        customer_address: document.getElementById('customer_address').value.trim(),
         rating: selectedRating,
         subject: document.getElementById('subject').value.trim(),
         content: document.getElementById('content').value.trim(),
@@ -363,16 +842,26 @@
 
       status.style.color = '#166534';
       status.textContent = 'Thank you for your feedback.';
-      form.reset();
+      lastSubmittedTestimonial = payload;
       selectedPhotos = [];
       document.getElementById('image-preview').innerHTML = '';
-      setRating(5);
       document.getElementById('submit-overlay-title').textContent = 'Thank you';
-      overlayMessage.textContent = 'Thank you for your feedback.';
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 1500);
+      overlayMessage.textContent = 'Would you like to answer a few additional questions about your experience, engineer and insurer or agent? This really helps us improve customer service, development and training.';
+      document.querySelector('#submit-overlay .spinner').style.display = 'none';
+      document.getElementById('feedback-followup-actions').style.display = 'flex';
     });
+
+    function continueToFeedbackSurvey() {
+      const params = new URLSearchParams({
+        from: 'testimonial',
+        name: lastSubmittedTestimonial?.customer_name || document.getElementById('customer_name').value.trim(),
+        email: lastSubmittedTestimonial?.customer_email || document.getElementById('customer_email').value.trim(),
+        phone: lastSubmittedTestimonial?.customer_phone || document.getElementById('customer_phone').value.trim(),
+        job: lastSubmittedTestimonial?.job_number || document.getElementById('job_number').value.trim(),
+        address: lastSubmittedTestimonial?.customer_address || document.getElementById('customer_address').value.trim(),
+      });
+      window.location.href = `feedback.html?${params.toString()}`;
+    }
   </script>
   <script src="assets/js/include.js"></script>
   <script src="assets/js/nav.js"></script>

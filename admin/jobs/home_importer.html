@@ -37,6 +37,14 @@
         .btn-calendar:disabled { background: #95a5a6; cursor: not-allowed; }
         #pdfPreview { width: 100%; height: 100%; border: none; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background: white; }
         .preview-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border: 2px dashed #ccc; border-radius: 8px; color: #999; font-weight: bold; background: #fff; }
+
+        .paste-panel { background: white; padding: 16px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); border-left: 4px solid #27ae60; }
+        .paste-panel h3 { margin-top: 0; margin-bottom: 8px; color: #2c3e50; }
+        .paste-panel p { margin-top: 0; color: #666; font-size: 0.9em; }
+        #portalTextInput { width: 100%; height: 130px; min-height: 90px; box-sizing: border-box; margin-bottom: 10px; }
+        .btn-action { background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px 14px; font-size: 0.95em; font-weight: bold; transition: background 0.2s; }
+        .btn-action:hover { background: #0052a3; }
+        .btn-secondary { background: #e0e0e0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 10px 14px; font-size: 0.95em; font-weight: bold; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
@@ -48,6 +56,16 @@
                 <p>or <label for="pdfInput">click to browse</label></p>
                 <input type="file" id="pdfInput" accept="application/pdf">
                 <div id="status">Waiting for file...</div>
+            </div>
+
+            <div class="paste-panel">
+                <h3>Paste ServiceBench Job Text</h3>
+                <p>Select all/copy from the ServiceBench job page, paste it here, then extract. Unknown times will be marked amber for review.</p>
+                <textarea id="portalTextInput" placeholder="Paste ServiceBench job text here..."></textarea>
+                <div class="input-wrapper">
+                    <button type="button" class="btn-action" onclick="parsePortalPastedText()">Extract Pasted Text</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('portalTextInput').value=''">Clear Paste Box</button>
+                </div>
             </div>
 
             <div class="tabs">
@@ -62,13 +80,12 @@
                     <div class="form-grid">
                         <div class="form-group"><label>Service Job:</label><div class="input-wrapper"><input type="text" id="service_job"><button type="button" class="btn-paste" onclick="pasteClipboard('service_job')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>CRM Number:</label><div class="input-wrapper"><input type="text" id="crm_number"><button type="button" class="btn-paste" onclick="pasteClipboard('crm_number')" title="Paste">Paste</button></div></div>
-                        <div class="form-group"><label>Job Type:</label><div class="input-wrapper"><input type="text" id="job_type"><button type="button" class="btn-paste" onclick="pasteClipboard('job_type')" title="Paste">Paste</button></div></div>
+                        <div class="form-group"><label>Job Type / Product Line:</label><div class="input-wrapper"><input type="text" id="job_type"><button type="button" class="btn-paste" onclick="pasteClipboard('job_type')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Job Status:</label><div class="input-wrapper"><input type="text" id="job_status"><button type="button" class="btn-paste" onclick="pasteClipboard('job_status')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Job Status Date:</label><div class="input-wrapper"><input type="text" id="job_status_date"><button type="button" class="btn-paste" onclick="pasteClipboard('job_status_date')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Technician:</label><div class="input-wrapper"><input type="text" id="technician"><button type="button" class="btn-paste" onclick="pasteClipboard('technician')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Scheduled Service Date:</label><div class="input-wrapper"><input type="text" id="scheduled_date"><button type="button" class="btn-paste" onclick="pasteClipboard('scheduled_date')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Scheduled Time Slot:</label><div class="input-wrapper"><input type="text" id="scheduled_time"><button type="button" class="btn-paste" onclick="pasteClipboard('scheduled_time')" title="Paste">Paste</button></div></div>
-                        <div class="form-group full-width"><label>Service Description:</label><div class="input-wrapper"><input type="text" id="service_description"><button type="button" class="btn-paste" onclick="pasteClipboard('service_description')" title="Paste">Paste</button></div></div>
                     </div>
                 </div>
 
@@ -77,7 +94,6 @@
                         <div class="form-group full-width"><label>Customer Name:</label><div class="input-wrapper"><input type="text" id="customer_name"><button type="button" class="btn-paste" onclick="pasteClipboard('customer_name')" title="Paste">Paste</button></div></div>
                         <div class="form-group full-width"><label>Property Address:</label><div class="input-wrapper"><input type="text" id="customer_address"><button type="button" class="btn-paste" onclick="pasteClipboard('customer_address')" title="Paste">Paste</button></div></div>
                         <div class="form-group full-width"><label>Phone Number(s):</label><div class="input-wrapper"><input type="text" id="customer_phone"><button type="button" class="btn-paste" onclick="pasteClipboard('customer_phone')" title="Paste">Paste</button></div></div>
-                        <div class="form-group full-width"><label>Service Provider:</label><div class="input-wrapper"><input type="text" id="service_provider"><button type="button" class="btn-paste" onclick="pasteClipboard('service_provider')" title="Paste">Paste</button></div></div>
                     </div>
                 </div>
 
@@ -86,7 +102,6 @@
                         <div class="form-group"><label>Brand:</label><div class="input-wrapper"><input type="text" id="brand"><button type="button" class="btn-paste" onclick="pasteClipboard('brand')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Model Number:</label><div class="input-wrapper"><input type="text" id="model_number"><button type="button" class="btn-paste" onclick="pasteClipboard('model_number')" title="Paste">Paste</button></div></div>
                         <div class="form-group"><label>Serial Number:</label><div class="input-wrapper"><input type="text" id="serial_number"><button type="button" class="btn-paste" onclick="pasteClipboard('serial_number')" title="Paste">Paste</button></div></div>
-                        <div class="form-group"><label>Product Line:</label><div class="input-wrapper"><input type="text" id="product_line"><button type="button" class="btn-paste" onclick="pasteClipboard('product_line')" title="Paste">Paste</button></div></div>
                         <div class="form-group full-width"><label>Problem Description:</label><div class="input-wrapper"><textarea id="problem_description"></textarea><button type="button" class="btn-paste" onclick="pasteClipboard('problem_description')" title="Paste" style="height: auto;">Paste</button></div></div>
                         <div class="form-group full-width"><label>Special Instruction:</label><div class="input-wrapper"><textarea id="special_instruction"></textarea><button type="button" class="btn-paste" onclick="pasteClipboard('special_instruction')" title="Paste" style="height: auto;">Paste</button></div></div>
                     </div>
@@ -127,6 +142,7 @@
         const addCalendarBtn = document.getElementById('addCalendarBtn');
         const pdfPreview = document.getElementById('pdfPreview');
         const placeholder = document.getElementById('placeholder');
+        let calendarDurationMinutes = 30;
 
         document.querySelectorAll('input[type="text"], textarea').forEach(input => {
             input.addEventListener('input', function() {
@@ -187,16 +203,35 @@
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 let fullText = "";
+                let positionedItems = [];
 
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.0 });
                     const textContent = await page.getTextContent();
                     fullText += textContent.items.map(item => item.str).join(" ") + " ";
+
+                    textContent.items.forEach(item => {
+                        const str = (item.str || "").trim();
+                        if (!str) return;
+
+                        // Keep the visual position of every text item. This PDF template
+                        // does not extract in reading order, so regex over one long string
+                        // is unreliable. The coordinates let us read the value boxes instead.
+                        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                        const fontHeight = Math.abs(tx[3]) || item.height || 0;
+                        positionedItems.push({
+                            text: str,
+                            x: tx[4],
+                            y: tx[5] - fontHeight,
+                            page: i
+                        });
+                    });
                 }
 
-                parseTextAndFillForm(fullText);
+                parseTextAndFillForm(fullText, positionedItems);
                 buildCalendarPreview();
-                statusText.innerText = "Extraction complete! Please review highlighted fields before generating Outlook.";
+                statusText.innerText = "Extraction complete! Please review highlighted fields before generating calendar event.";
                 statusText.style.color = "#27ae60";
                 addCalendarBtn.disabled = false;
             } catch (error) {
@@ -206,70 +241,282 @@
             }
         });
 
-        function parseTextAndFillForm(text) {
-            const normalized = text.replace(/\s+/g, " ").trim();
-            const setValue = (id, value, uncertain = false) => {
-                const input = document.getElementById(id);
-                input.classList.remove('failed', 'amber-warning');
+        function normaliseSpaces(value) {
+            return (value || "").toString().replace(/\r/g, "").replace(/\s+/g, " ").trim();
+        }
 
-                if (!value || value === "N/A") {
-                    input.value = value || "Failed to read";
-                    input.classList.add(value ? 'amber-warning' : 'failed');
-                    return;
-                }
+        function setFieldValue(id, value, uncertain = false) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.classList.remove('failed', 'amber-warning');
 
-                input.value = value.trim();
-                if (uncertain) input.classList.add('amber-warning');
+            value = normaliseSpaces(value);
+            if (!value || value === "N/A" || value === "Select..." || value === "...") {
+                input.value = "Failed to read";
+                input.classList.add('failed');
+                return;
+            }
+
+            input.value = value;
+            if (uncertain) input.classList.add('amber-warning');
+        }
+
+        function markAmber(id) {
+            const input = document.getElementById(id);
+            if (input) input.classList.add('amber-warning');
+        }
+
+        function formatPostcode(value) {
+            return normaliseSpaces(value)
+                .replace(/\b([A-Z]{1,2}\d[A-Z\d]?)[ ]?(\d[A-Z]{2})\b/gi, (m, a, b) => `${a.toUpperCase()} ${b.toUpperCase()}`);
+        }
+
+        function unique(values) {
+            return [...new Set(values.map(v => normaliseSpaces(v)).filter(Boolean))];
+        }
+
+        function validFieldValue(v) {
+            return v && v !== "Failed to read" && v !== "Empty" && v !== "N/A" && v !== "Select..." && v !== "...";
+        }
+
+        function deriveServiceLabel(value) {
+            const text = normaliseSpaces(value).toUpperCase();
+            if (!text) return "SERVICE";
+            if (text.includes("GAS")) return "GAS";
+            if (text.includes("PLUMB") || text.includes("WATER") || text.startsWith("P-") || text.startsWith("W-")) return "PLUMBING";
+            if (text.includes("SERVICE") || text.includes("SERVICING") || text.includes("MAINT")) return "SERVICE";
+            return text.replace(/^P-/, "").replace(/^W-/, "");
+        }
+
+        function parseBookingSlot(rawSlot) {
+            const original = normaliseSpaces(rawSlot).replace(/Export to Calendar/ig, "").trim();
+            const text = original.toUpperCase();
+            const result = {
+                label: "TIME TBC",
+                hour: 12,
+                minute: 0,
+                durationMinutes: 240,
+                uncertain: true
             };
-            const firstMatch = (regex) => {
+
+            if (!text || text === "FAILED TO READ") return result;
+
+            const hoursMatch = text.match(/(\d+(?:\.\d+)?)\s*-?\s*HOURS?/i);
+            const durationHours = hoursMatch ? parseFloat(hoursMatch[1]) : null;
+
+            if (text.includes("ALL DAY") || durationHours >= 8) {
+                return { label: "ALL DAY", hour: 9, minute: 0, durationMinutes: 480, uncertain: false };
+            }
+
+            if (/\bAM\b/.test(text)) {
+                return { label: "AM", hour: 8, minute: 0, durationMinutes: durationHours ? durationHours * 60 : 240, uncertain: false };
+            }
+
+            if (/\bPM\b/.test(text)) {
+                return { label: "PM", hour: 12, minute: 0, durationMinutes: durationHours ? durationHours * 60 : 240, uncertain: false };
+            }
+
+            const timeMatch = text.match(/\b([01]?\d|2[0-3])[:.]?([0-5]\d)\b/);
+            if (timeMatch) {
+                const hour = parseInt(timeMatch[1], 10);
+                const minute = parseInt(timeMatch[2], 10);
+                const durationMinutes = durationHours ? durationHours * 60 : 240;
+                return {
+                    label: hour < 12 ? "AM" : "PM",
+                    hour,
+                    minute,
+                    durationMinutes,
+                    uncertain: false
+                };
+            }
+
+            return result;
+        }
+
+        function tidyAddress(address, removeCountry = false) {
+            let result = formatPostcode(address);
+            if (removeCountry) result = result.replace(/,?\s*UNITED KINGDOM\b/i, "");
+            return result
+                .replace(/\s*\/\s*/g, " ")
+                .replace(/\s*,\s*/g, ", ")
+                .replace(/(?:,\s*){2,}/g, ", ")
+                .replace(/^,\s*|,\s*$/g, "")
+                .trim();
+        }
+
+        function cleanAddressForTitle(address) {
+            return tidyAddress(address, true);
+        }
+
+        function parsePortalPastedText() {
+            const rawText = document.getElementById('portalTextInput').value;
+            if (!rawText.trim()) {
+                alert("Paste the ServiceBench job text first.");
+                return;
+            }
+
+            parsePortalTextAndFillForm(rawText);
+            buildCalendarPreview();
+            statusText.innerText = "Pasted ServiceBench text extracted. Please review amber fields before generating calendar event.";
+            statusText.style.color = "#27ae60";
+            addCalendarBtn.disabled = false;
+        }
+
+        function parsePortalTextAndFillForm(text) {
+            const raw = text.replace(/\r/g, "");
+            const normalized = raw.replace(/\t/g, " ").replace(/[ ]+/g, " ");
+
+            const matchOne = (regex) => {
+                const match = normalized.match(regex);
+                return match ? normaliseSpaces(match[1]) : "";
+            };
+
+            const blockBetween = (startRegex, endRegex) => {
+                const startMatch = startRegex.exec(raw);
+                if (!startMatch) return "";
+                const startIndex = startMatch.index + startMatch[0].length;
+                const rest = raw.slice(startIndex);
+                const endMatch = endRegex.exec(rest);
+                return (endMatch ? rest.slice(0, endMatch.index) : rest).trim();
+            };
+
+            const serviceJob = matchOne(/Service Job ID\s+([A-Z0-9-]+)/i) || matchOne(/\b(SHUK[A-Z0-9-]+)\b/i);
+            const crmNumber = matchOne(/CRM Number\s+(CAS-\d+)/i);
+            const jobStatus = matchOne(/Service Job Status(?! Date)\s+([A-Za-z]+)/i);
+            const jobStatusDate = matchOne(/Service Job Status Date\s+(\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2}\s+GMT)?)/i);
+            const technician = matchOne(/Technician Name\s+([^\n]+)/i);
+
+            const productLine = matchOne(/Product Line\s+([A-Z0-9-]+)\s+Serial Number/i)
+                || matchOne(/Product Line\s+([^\n]+)/i);
+            const serviceType = matchOne(/Service Type\s+([A-Z][A-Z ]+?)(?:\s+Service Category|\s+Repudiation Reason|\n)/i);
+            const productCategory = matchOne(/Product Category\s+([A-Z]\s*-\s*[A-Z]+)/i) || matchOne(/Product Category\s+([^\n]+)/i);
+            const jobType = productLine || serviceType || productCategory || matchOne(/Service Job Type\s+([^\n]+)/i);
+
+            const customerBlock = blockBetween(/\bService Order Type[\s\S]*?\bCustomer\s*\n/i, /\n\s*Customer Phone Number/i);
+            const customerLines = customerBlock.split(/\n+/).map(line => line.trim()).filter(Boolean);
+            const customerName = customerLines[0] || "";
+            const phonesFromCustomerBlock = Array.from(customerBlock.matchAll(/\b0\d{10}\b/g)).map(m => m[0]);
+            const addressLines = customerLines.slice(1).filter(line => !/\b0\d{10}\b/.test(line));
+            let address = addressLines.join(", ")
+                .replace(/\s+-\s+/g, ", ")
+                .replace(/,?\s+UNITED KINGDOM/i, ", UNITED KINGDOM");
+            address = tidyAddress(address, false);
+
+            const phoneBlock = blockBetween(/Customer Phone Number\s*\n/i, /\n\s*Customer Email/i);
+            const phonesFromPhoneBlock = Array.from(phoneBlock.matchAll(/\b0\d{10}\b/g)).map(m => m[0]);
+            const allPhones = unique([...phonesFromCustomerBlock, ...phonesFromPhoneBlock]);
+
+            const problem = matchOne(/Return ID[\s\S]*?Problem Description\s+([\s\S]*?)\s+Service Description/i) || matchOne(/Problem Description\s+([\s\S]*?)\s+Service Description/i);
+            const specialInstructions = matchOne(/Special Instructions\s+([\s\S]*?)\s+Re-notify reason/i);
+            const scheduledDate = matchOne(/Scheduled Service Date\s+(\d{2}\/\d{2}\/\d{4})/i);
+            let scheduledSlot = matchOne(/Scheduled Service Time Slot\s+([\s\S]*?)\s+Service Job Expiration Date/i);
+            scheduledSlot = scheduledSlot.replace(/Export to Calendar/ig, "").trim();
+
+            setFieldValue('customer_name', customerName);
+            setFieldValue('customer_address', address, !address);
+            setFieldValue('customer_phone', allPhones.join(" / "));
+            setFieldValue('service_job', serviceJob);
+            setFieldValue('crm_number', crmNumber);
+            setFieldValue('job_type', jobType);
+            setFieldValue('job_status', jobStatus);
+            setFieldValue('job_status_date', jobStatusDate);
+            setFieldValue('technician', technician);
+            setFieldValue('scheduled_date', scheduledDate);
+            setFieldValue('scheduled_time', scheduledSlot, parseBookingSlot(scheduledSlot).uncertain);
+            setFieldValue('brand', matchOne(/Brand\s+([^\n]+)/i));
+            setFieldValue('model_number', matchOne(/Model Number\s+([^\n]+)/i));
+            setFieldValue('serial_number', matchOne(/Serial Number\s+([^\n]+)/i));
+            setFieldValue('problem_description', problem);
+            setFieldValue('special_instruction', specialInstructions);
+        }
+
+        function parseTextAndFillForm(text, positionedItems = []) {
+            const normalized = text.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+
+            const extract = (regex) => {
                 const match = normalized.match(regex);
                 return match ? match[1].trim() : "";
             };
-            const allMatches = (regex) => Array.from(normalized.matchAll(regex), match => match[1].trim());
 
-            const dates = allMatches(/\b(\d{2}\/\d{2}\/\d{4})\b/g);
-            const phones = Array.from(new Set(allMatches(/\b(0\d{10})\b/g)));
-            const serviceJob = firstMatch(/\b(SHUK[A-Z0-9-]+)\b/i);
-            const crmNumber = firstMatch(/\b(\d{9})\s+SHUK[A-Z0-9-]+\b/i) || firstMatch(/\bCRM Number\s+(\d{6,})\b/i);
-            const serviceProvider = firstMatch(/\b(\d+\s+-\s+Warm Right Limited)\b/i);
+            const firstMatch = (value, regex) => {
+                const match = normaliseSpaces(value).match(regex);
+                return match ? match[1] : "";
+            };
 
-            setValue('service_job', serviceJob);
-            setValue('crm_number', crmNumber);
-            setValue('job_type', firstMatch(/\b(Planned Work Request)\b/i));
-            setValue('job_status', firstMatch(/\bTN\d{2}\s?\d[A-Z]{2}\s+(ACCEPTED|BOOKED|CANCELLED|COMPLETED|OPEN|NEW)\b/i) || firstMatch(/\b(ACCEPTED|BOOKED|CANCELLED|COMPLETED|OPEN|NEW)\s+0\d{10}\b/i));
-            setValue('job_status_date', dates[1] || "", dates.length > 1);
-            setValue('technician', firstMatch(/\b(OSR)\b/i), true);
-            setValue('scheduled_date', dates[0] || "");
-            setValue('scheduled_time', firstMatch(/(?:^|\s)([0-2][0-9][0-5][0-9])(?=\s|$)/));
-            setValue('service_description', firstMatch(/\b(Boiler Service)\b/i));
+            const boxText = (x1, y1, x2, y2) => {
+                if (!positionedItems || !positionedItems.length) return "";
+                const selected = positionedItems
+                    .filter(item => item.page === 1 && item.x >= x1 && item.x <= x2 && item.y >= y1 && item.y <= y2)
+                    .sort((a, b) => (a.y - b.y) || (a.x - b.x));
 
-            setValue('customer_name', firstMatch(/\bST\.?\s+MARYS ROW\s+(.+?)\s+\d{6,}\s+PROMA\b/i), true);
-            setValue('customer_address', buildAddressFromKnownParts(normalized), true);
-            setValue('customer_phone', phones.join(" / "));
-            setValue('service_provider', serviceProvider);
+                const lines = [];
+                selected.forEach(item => {
+                    let line = lines.find(row => Math.abs(row.y - item.y) <= 4);
+                    if (!line) {
+                        line = { y: item.y, items: [] };
+                        lines.push(line);
+                    }
+                    line.items.push(item);
+                    line.y = line.items.reduce((sum, current) => sum + current.y, 0) / line.items.length;
+                });
 
-            setValue('brand', firstMatch(/\b(Potterton)\b/i));
-            setValue('model_number', firstMatch(/\b(PROMA\s+30\s+HE\s+PLUS)\b/i));
-            setValue('serial_number', firstMatch(/\b(\d{9})\s+PROMA\s+30\s+HE\s+PLUS\b/i), true);
-            setValue('product_line', firstMatch(/\b(Boiler Service)\b/i), true);
-            setValue('problem_description', firstMatch(/\bSheerness\s+(.+?,\s+Boiler Age\s+\d+,\s+Priority\s+\d+)\s+TN\d{2}\s?\d[A-Z]{2}\b/i) || firstMatch(/\b([A-Za-z][A-Za-z ]+,\s+Boiler Age\s+\d+,\s+Priority\s+\d+)\b/i));
-            setValue('special_instruction', "");
-        }
+                return normaliseSpaces(lines
+                    .sort((a, b) => a.y - b.y)
+                    .map(line => line.items.sort((a, b) => a.x - b.x).map(item => item.text).join(" "))
+                    .join(" "));
+            };
 
-        function buildAddressFromKnownParts(text) {
-            const line1 = text.match(/\b(\d+\s+Derville Road)\b/i);
-            const line2 = text.match(/\b(ST\.?\s+MARYS ROW)\b/i);
-            const town = text.match(/\b(New Romney)\b/i);
-            const postcode = text.match(/\b(TN\d{2}\s?\d[A-Z]{2})\b/i);
-            const parts = [line1, line2, town, postcode]
-                .filter(Boolean)
-                .map(match => match[1].replace(/\s+/g, " ").trim());
+            const fallback = {
+                customer_name: extract(/CUSTOMER\s+Name\s+(.*?)\s+Address/i) || extract(/Name\s+(.*?)\s+Address/i),
+                customer_address: extract(/Address\s+(.*?)\s+Phone/i),
+                customer_phone: unique(Array.from(normalized.matchAll(/\b(0\d{10})\b/g)).map(m => m[1])).join(" / "),
+                product_line: extract(/Product Line\s+(.*?)\s+Manufacturer/i),
+                scheduled_date: extract(/Scheduled Service Date\s+(\d{2}\/\d{2}\/\d{4})/i),
+                scheduled_time: extract(/Scheduled Time Slot\s+(\d{4})/i),
+                special_instruction: extract(/Special Instruction\s+(.*?)\s+Scheduled Time Slot/i),
+                problem_description: extract(/Problem Description\s+(.*?)\s+PAYMENT/i),
+                service_job: extract(/Service Job[^A-Z0-9]*(SHUK[A-Z0-9-]+)/i),
+                crm_number: extract(/CRM Number[^A-Z0-9]*(CAS-\d+)/i),
+                job_status: extract(/Job Status[^A-Z]*(ACCEPTED|BOOKED|CANCELLED|COMPLETED|OPEN|NEW)/i),
+                job_status_date: extract(/Job Status Date[^0-9]*(\d{2}\/\d{2}\/\d{4})/i)
+            };
 
-            if (parts.length) {
-                parts.push("UNITED KINGDOM");
-                return parts.join(" ");
-            }
-            return "";
+            // Visual/coordinate extraction for the Home job-sheet template.
+            const customerName = boxText(95, 35, 220, 55) || fallback.customer_name;
+            let address = boxText(95, 53, 340, 106) || fallback.customer_address;
+            address = formatPostcode(address
+                .replace(/\s+-\s+-\s+/g, " ")
+                .replace(/^[- ]+|[- ]+$/g, "")
+                .replace(/\s+UNITED KINGDOM\b/i, ", UNITED KINGDOM")
+                .replace(/\s+/g, " "));
+
+            const primaryPhone = firstMatch(boxText(95, 104, 180, 130), /\b(0\d{10})\b/);
+            const mobilePhone = firstMatch(boxText(250, 121, 320, 145), /\b(0\d{10})\b/);
+            const customerPhones = unique([primaryPhone, mobilePhone, fallback.customer_phone].flatMap(v => normaliseSpaces(v).split(/\s*\/\s*/))).join(" / ");
+
+            // User preference: use Product Line only here, not the separate Job Type value.
+            const productLine = boxText(95, 210, 190, 235) || fallback.product_line;
+
+            setFieldValue('customer_name', customerName);
+            setFieldValue('customer_address', address, true);
+            setFieldValue('customer_phone', customerPhones);
+
+            setFieldValue('service_job', boxText(665, 30, 770, 55) || fallback.service_job);
+            setFieldValue('crm_number', boxText(665, 120, 750, 145) || fallback.crm_number);
+            setFieldValue('job_type', productLine);
+            setFieldValue('job_status', boxText(665, 66, 740, 90) || fallback.job_status);
+            setFieldValue('job_status_date', boxText(665, 85, 740, 106) || fallback.job_status_date);
+            setFieldValue('technician', boxText(665, 103, 760, 125));
+
+            setFieldValue('scheduled_date', firstMatch(boxText(175, 275, 240, 300), /(\d{2}\/\d{2}\/\d{4})/) || fallback.scheduled_date);
+            const pdfSlot = firstMatch(boxText(350, 285, 400, 310), /(\d{4})/) || fallback.scheduled_time;
+            setFieldValue('scheduled_time', pdfSlot, parseBookingSlot(pdfSlot).uncertain);
+
+            setFieldValue('brand', boxText(95, 198, 190, 218));
+            setFieldValue('model_number', boxText(95, 160, 210, 185));
+            setFieldValue('serial_number', boxText(95, 185, 210, 205));
+            setFieldValue('problem_description', boxText(510, 160, 620, 185) || fallback.problem_description);
+            setFieldValue('special_instruction', boxText(180, 395, 250, 420) || fallback.special_instruction);
         }
 
         function toLocalISO(dateObj) {
@@ -282,7 +529,7 @@
             const endInput = document.getElementById('cal_end');
             if (startInput.value) {
                 const startDate = new Date(startInput.value);
-                const endDate = new Date(startDate.getTime() + (30 * 60000));
+                const endDate = new Date(startDate.getTime() + (calendarDurationMinutes * 60000));
                 endInput.value = toLocalISO(endDate);
             }
         }
@@ -299,76 +546,92 @@
 
         function buildCalendarPreview() {
             const getVal = (id) => document.getElementById(id).value;
-            const valid = (v) => v && v !== "Failed to read" && v !== "Empty" && v !== "N/A";
+            const valid = validFieldValue;
 
-            const serviceJob = getVal('service_job');
             const crmNumber = getVal('crm_number');
-            const serviceDescription = getVal('service_description');
+            const jobType = getVal('job_type');
+            const serviceLabel = deriveServiceLabel(jobType);
             const customerName = getVal('customer_name');
-            const address = getVal('customer_address');
+            const rawAddress = tidyAddress(getVal('customer_address'), false);
+            const address = cleanAddressForTitle(getVal('customer_address'));
             const phone = getVal('customer_phone');
+            const titlePhones = unique(normaliseSpaces(phone).split(/\s*\/\s*|\s{2,}/)).join(" ");
+            const booking = parseBookingSlot(getVal('scheduled_time'));
+            calendarDurationMinutes = 30;
 
-            let titleStr = "";
-            if (valid(serviceDescription)) titleStr += `[${serviceDescription}] - `;
-            titleStr += `Job: ${valid(serviceJob) ? serviceJob : '_'} - CRM: ${valid(crmNumber) ? crmNumber : '_'}`;
-            if (valid(customerName)) titleStr += ` - ${customerName}`;
-            if (valid(address)) titleStr += ` - ${address}`;
-            if (valid(phone)) titleStr += ` - ${phone}`;
+            const titleParts = [];
+            titleParts.push(booking.label || "TIME TBC");
+            if (valid(serviceLabel)) titleParts.push(serviceLabel);
+            if (valid(crmNumber)) titleParts.push(crmNumber);
+            if (valid(customerName)) titleParts.push(customerName);
+            if (valid(address)) titleParts.push(address);
+            if (valid(titlePhones)) titleParts.push(titlePhones);
+            document.getElementById('cal_title').value = titleParts.join(" - ");
+            document.getElementById('cal_location').value = valid(rawAddress) ? rawAddress : '';
 
-            document.getElementById('cal_title').value = titleStr;
-            document.getElementById('cal_location').value = valid(address) ? address : '';
+            const lines = [];
 
-            const lines = ["Home Job Details:", "-----------------", ""];
-            const addField = (label, value) => {
-                if (valid(value)) lines.push(`${label}: ${value}`);
-            };
-            const addBlankLine = () => {
-                if (lines[lines.length - 1] !== "") lines.push("");
-            };
+const addLine = (value) => {
+    if (valid(value)) lines.push(value);
+};
 
-            addField("Service Job", serviceJob);
-            addField("CRM Number", crmNumber);
-            addField("Job Type", getVal('job_type'));
-            addField("Job Status", getVal('job_status'));
-            addField("Job Status Date", getVal('job_status_date'));
-            addField("Technician", getVal('technician'));
-            addBlankLine();
+const addField = (label, value) => {
+    if (valid(value)) lines.push(`${label}: ${value}`);
+};
 
-            addField("Scheduled Service Date", getVal('scheduled_date'));
-            addField("Scheduled Time Slot", getVal('scheduled_time'));
-            addField("Service Description", serviceDescription);
-            addBlankLine();
+const addSection = (title) => {
+    if (lines.length && lines[lines.length - 1] !== "") lines.push("");
+    lines.push(title.toUpperCase());
+};
 
-            addField("Customer Name", customerName);
-            addField("Property Address", address);
-            addField("Phone Number(s)", phone);
-            addField("Service Provider", getVal('service_provider'));
-            addBlankLine();
+const addBlankLine = () => {
+    if (lines.length && lines[lines.length - 1] !== "") lines.push("");
+};
 
-            addField("Brand", getVal('brand'));
-            addField("Model Number", getVal('model_number'));
-            addField("Serial Number", getVal('serial_number'));
-            addField("Product Line", getVal('product_line'));
-            addBlankLine();
+const formatAddressForNotes = (value) => {
+    if (!valid(value)) return [];
 
-            addField("Problem Description", getVal('problem_description'));
-            addField("Special Instruction", getVal('special_instruction'));
-            document.getElementById('cal_desc').value = lines.join('\n').trim();
+    return value
+        .replace(/\s*,\s*/g, "\n")
+        .replace(/\s+-\s+/g, "\n")
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(Boolean);
+};
+
+addSection("Customer:");
+addLine(customerName);
+formatAddressForNotes(address).forEach(line => addLine(line));
+addLine(phone);
+
+addSection("Job:");
+addField("CRM", crmNumber);
+addField("Type", jobType);
+
+addSection("Problem:");
+addLine(getVal('problem_description'));
+
+addSection("Special Instructions:");
+addLine(getVal('special_instruction'));
+
+document.getElementById('cal_desc').value = lines.join('\n').trim();
 
             const dateStr = getVal('scheduled_date');
-            const timeStr = getVal('scheduled_time');
             let dateMatched = false;
+            const startInput = document.getElementById('cal_start');
+            const endInput = document.getElementById('cal_end');
+            startInput.classList.remove('amber-warning');
+            endInput.classList.remove('amber-warning');
 
             if (valid(dateStr)) {
                 const dateMatch = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                 if (dateMatch) {
-                    const month = dateMatch[1];
-                    const day = dateMatch[2];
+                    const day = dateMatch[1];
+                    const month = dateMatch[2];
                     const year = dateMatch[3];
-                    const timeMatch = valid(timeStr) ? timeStr.match(/^([0-2][0-9])([0-5][0-9])$/) : null;
-                    const hours = timeMatch ? timeMatch[1] : "12";
-                    const minutes = timeMatch ? timeMatch[2] : "00";
-                    document.getElementById('cal_start').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    const hours = String(booking.hour).padStart(2, '0');
+                    const minutes = String(booking.minute).padStart(2, '0');
+                    startInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
                     dateMatched = true;
                 }
             }
@@ -376,10 +639,17 @@
             if (!dateMatched) {
                 const now = new Date();
                 now.setMinutes(now.getMinutes() < 30 ? 30 : 60, 0, 0);
-                document.getElementById('cal_start').value = toLocalISO(now);
+                startInput.value = toLocalISO(now);
+                markAmber('cal_start');
             }
 
             syncEndTime();
+
+            if (booking.uncertain) {
+                markAmber('scheduled_time');
+                markAmber('cal_start');
+                markAmber('cal_end');
+            }
         }
 
         function escapeICalText(value) {

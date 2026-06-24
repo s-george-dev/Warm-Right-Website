@@ -145,6 +145,12 @@ async function githubJson<T>(method: string, path: string, body?: unknown): Prom
   const text = await response.text();
   const data = text ? JSON.parse(text) : {};
   if (!response.ok) {
+    if (response.status === 403 && /personal access token|resource not accessible/i.test(data.message || '')) {
+      throw httpError(
+        'GitHub denied the upload token. Update the GITHUB_TOKEN Supabase secret with access to this repository and Repository permissions > Contents: Read and write.',
+        403,
+      );
+    }
     throw httpError(data.message || `GitHub API error (${response.status}).`, response.status);
   }
   return data;

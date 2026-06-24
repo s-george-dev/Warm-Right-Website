@@ -41,18 +41,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   Promise.all([
     initPublicDatabase(),
-    loadScriptOnce(siteRoot + "assets/js/site-management-public.js?v=4"),
-    loadScriptOnce(siteRoot + "assets/js/hero-management-public.js?v=7"),
-    loadScriptOnce(siteRoot + "assets/js/content-cards.js?v=6"),
+    loadScriptOnce(siteRoot + "assets/js/site-management-public.js?v=5"),
+    loadScriptOnce(siteRoot + "assets/js/hero-management-public.js?v=8"),
+    loadScriptOnce(siteRoot + "assets/js/content-cards.js?v=8"),
+    loadScriptOnce(siteRoot + "assets/js/site-analytics.js?v=1"),
     loadHTML("header", partialsPath + "header.html"),
     loadHTML("footer", partialsPath + "footer.html")
   ]).then(() => {
     const header = document.getElementById("header");
     if (header) {
       fixInjectedPaths(header, siteRoot);
-      
-      const headerEl = header.querySelector(".header");
-      if (headerEl) headerEl.classList.add("loaded");
     }
     const footer = document.getElementById("footer");
     if (footer) fixInjectedPaths(footer, siteRoot);
@@ -62,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.initWarmRight();
     }
     document.dispatchEvent(new Event("includesLoaded"));
+    window.setTimeout(() => header?.querySelector(".header")?.classList.add("loaded"), 2000);
   });
 });
 

@@ -157,7 +157,8 @@ function renderWebsiteManagementNav() {
         { file: 'testimonials-admin.html', label: 'Testimonials' },
         { file: 'site-management.html', label: 'Pages & Carousels' },
         { file: 'coverage-admin.html', label: 'Coverage Map' },
-        { file: 'website-file-explorer.html', label: 'File Explorer' }
+        { file: 'website-file-explorer.html', label: 'File Explorer' },
+        { file: 'analytics-admin.html', label: 'Insights' }
     ];
     const currentFile = window.location.pathname.split('/').pop();
     if (!pages.some(page => page.file === currentFile)) return;

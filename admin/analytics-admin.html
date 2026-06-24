@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WarmHub - Website Insights</title>
+  <link rel="icon" href="../assets/images/favicon.png">
+  <link rel="stylesheet" href="../assets/css/admin.css?v=20260614c">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.adminPageTitle = 'WarmHub - Website Management';</script>
+  <script src="../assets/js/admin-include.js?v=20260624a"></script>
+  <style>
+    body { margin:0; background:#f3f6f7; color:#172033; font-family:'Segoe UI',sans-serif; visibility:hidden; }
+    .insights-shell { width:min(1180px,calc(100% - 40px)); margin:30px auto 60px; }
+    .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:24px; }
+    .page-head h1 { margin:0 0 6px; color:#004a99; font-size:28px; }
+    .page-head p { margin:0; color:#657087; }
+    .period-select { width:auto; min-width:150px; margin:0; }
+    .metric-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:20px; }
+    .metric-card,.panel { background:#fff; border:1px solid #e1e7ec; border-radius:8px; box-shadow:0 5px 18px rgba(23,32,51,.05); }
+    .metric-card { padding:20px; }
+    .metric-label { color:#657087; font-size:13px; font-weight:700; }
+    .metric-value { display:block; margin:8px 0 4px; color:#063c78; font-size:32px; font-weight:800; }
+    .metric-change { font-size:12px; color:#657087; }
+    .metric-change.up { color:#15803d; }
+    .metric-change.down { color:#b42318; }
+    .dashboard-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:20px; }
+    .panel { padding:22px; min-width:0; }
+    .panel h2 { margin:0 0 18px; color:#063c78; font-size:19px; }
+    .wide { grid-column:1/-1; }
+    .chart { display:grid; grid-template-columns:repeat(var(--chart-days),minmax(10px,1fr)); align-items:end; gap:4px; height:220px; padding-top:12px; border-bottom:1px solid #dfe5ea; }
+    .chart-column { display:flex; height:100%; align-items:end; justify-content:center; position:relative; }
+    .chart-bar { width:min(22px,80%); min-height:2px; border-radius:4px 4px 0 0; background:#0f6db4; }
+    .chart-column:hover .chart-tip { display:block; }
+    .chart-tip { display:none; position:absolute; bottom:calc(var(--bar-height) + 8px); z-index:2; padding:5px 7px; border-radius:4px; background:#172033; color:#fff; font-size:11px; white-space:nowrap; }
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th,.data-table td { padding:11px 8px; border-bottom:1px solid #edf0f3; text-align:left; }
+    .data-table th { color:#657087; font-size:12px; text-transform:uppercase; }
+    .data-table td:last-child,.data-table th:last-child { text-align:right; }
+    .empty { color:#7a8495; padding:20px 0; }
+    .ip-current { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px; background:#f5f8fb; border:1px solid #dce6ef; border-radius:6px; margin-bottom:18px; }
+    .ip-current code { color:#063c78; font-weight:800; }
+    .ip-form { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; margin-bottom:18px; }
+    .ip-form label { display:block; margin-bottom:5px; font-size:12px; font-weight:700; color:#596579; }
+    .ip-form input { margin:0; width:100%; box-sizing:border-box; }
+    .status { min-height:20px; margin:12px 0; color:#596579; font-weight:600; }
+    .btn-danger-small { padding:7px 10px; border:1px solid #fecaca; border-radius:5px; background:#fff; color:#dc2626; cursor:pointer; }
+    @media(max-width:800px){
+      .insights-shell{width:min(100% - 24px,1180px);margin-top:18px}.page-head{align-items:stretch;flex-direction:column}.metric-grid{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:1fr}.wide{grid-column:auto}.ip-form{grid-template-columns:1fr}.ip-current{align-items:flex-start;flex-direction:column}.chart{gap:2px}
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-header-container"></div>
+
+  <main class="insights-shell">
+    <header class="page-head">
+      <div>
+        <h1>Website Insights</h1>
+        <p>Anonymous visitor activity and website engagement.</p>
+      </div>
+      <select id="period" class="period-select" onchange="loadSummary()">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 12 months</option>
+      </select>
+    </header>
+
+    <div id="status" class="status">Loading insights...</div>
+
+    <section class="metric-grid" aria-label="Analytics totals">
+      <div class="metric-card"><span class="metric-label">Visitors</span><strong id="metric-visitors" class="metric-value">-</strong><span id="visitors-change" class="metric-change"></span></div>
+      <div class="metric-card"><span class="metric-label">Page views</span><strong id="metric-views" class="metric-value">-</strong><span id="views-change" class="metric-change"></span></div>
+      <div class="metric-card"><span class="metric-label">Actions</span><strong id="metric-conversions" class="metric-value">-</strong><span class="metric-change">Bookings, contacts, offers and testimonials</span></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel wide">
+        <h2>Daily Traffic</h2>
+        <div id="daily-chart" class="chart"></div>
+      </article>
+      <article class="panel"><h2>Top Pages</h2><div id="top-pages"></div></article>
+      <article class="panel"><h2>Visitor Devices</h2><div id="devices"></div></article>
+      <article class="panel"><h2>Referrals</h2><div id="referrers"></div></article>
+      <article class="panel"><h2>Website Actions</h2><div id="conversions"></div></article>
+
+      <article class="panel wide">
+        <h2>Excluded IP Addresses</h2>
+        <p>Traffic from these addresses is discarded before analytics data is saved.</p>
+        <div class="ip-current">
+          <div><span>Your current IP address</span><br><code id="current-ip">Checking...</code></div>
+          <button class="btn-primary" type="button" onclick="ignoreCurrentIp()">Ignore This IP Address</button>
+        </div>
+        <div class="ip-form">
+          <div><label for="manual-ip">IP address</label><input id="manual-ip" placeholder="IPv4 or IPv6 address"></div>
+          <div><label for="manual-label">Label</label><input id="manual-label" placeholder="Office, home, developer..."></div>
+          <button class="btn-outline" type="button" onclick="addManualIp()">Add Exclusion</button>
+        </div>
+        <div id="ip-status" class="status"></div>
+        <div id="exclusions"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://axampuprcnauxbbijmmt.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_NFuFkO0tybTuMvYOQekQmA_62araOjM';
+    const ANALYTICS_FUNCTION = `${SUPABASE_URL}/functions/v1/site-analytics`;
+    let currentSession = null;
+
+    async function checkSecurity() {
+      const lib = window.supabase || window.Supabase;
+      if (!lib) return setTimeout(checkSecurity, 50);
+      window.db = lib.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session } } = await window.db.auth.getSession();
+      if (!session) return window.location.replace('login.html');
+      currentSession = session;
+      await window.loadAdminHeader(session);
+      document.body.style.visibility = 'visible';
+      await Promise.all([loadSummary(), loadExclusions()]);
+    }
+
+    async function analyticsRequest(action, options = {}) {
+      const query = new URLSearchParams({ action, ...(options.query || {}) });
+      const response = await fetch(`${ANALYTICS_FUNCTION}?${query}`, {
+        method: options.method || 'GET',
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+          apikey: SUPABASE_KEY,
+          ...(options.body ? { 'Content-Type': 'application/json' } : {})
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
+      return data;
+    }
+
+    async function loadSummary() {
+      const status = document.getElementById('status');
+      status.textContent = 'Loading insights...';
+      try {
+        const data = await analyticsRequest('summary', { query: { days: document.getElementById('period').value } });
+        renderSummary(data);
+        status.textContent = `Updated ${new Date(data.generatedAt).toLocaleString('en-GB')}`;
+      } catch (err) {
+        status.textContent = `Unable to load insights: ${err.message}`;
+      }
+    }
+
+    function renderSummary(data) {
+      document.getElementById('metric-visitors').textContent = number(data.totals.visitors);
+      document.getElementById('metric-views').textContent = number(data.totals.views);
+      document.getElementById('metric-conversions').textContent = number(data.totals.conversions);
+      renderChange('visitors-change', data.totals.visitors, data.totals.previousVisitors);
+      renderChange('views-change', data.totals.views, data.totals.previousViews);
+      renderChart(data.daily || []);
+      renderTable('top-pages', data.topPages, 'Page');
+      renderTable('devices', data.devices, 'Device');
+      renderTable('referrers', data.referrers, 'Source');
+      renderTable('conversions', data.conversions, 'Action');
+    }
+
+    function renderChange(id, current, previous) {
+      const el = document.getElementById(id);
+      if (!previous) { el.textContent = current ? 'New activity in this period' : 'No previous-period activity'; el.className = 'metric-change'; return; }
+      const change = Math.round(((current - previous) / previous) * 100);
+      el.textContent = `${change >= 0 ? '+' : ''}${change}% from previous period`;
+      el.className = `metric-change ${change > 0 ? 'up' : change < 0 ? 'down' : ''}`;
+    }
+
+    function renderChart(rows) {
+      const chart = document.getElementById('daily-chart');
+      const max = Math.max(1, ...rows.map(row => row.views));
+      chart.style.setProperty('--chart-days', rows.length || 1);
+      chart.innerHTML = rows.map(row => {
+        const height = Math.max(2, Math.round((row.views / max) * 100));
+        return `<div class="chart-column" style="--bar-height:${height}%"><span class="chart-tip">${escapeHtml(formatDate(row.date))}: ${number(row.views)} views, ${number(row.visitors)} visitors</span><span class="chart-bar" style="height:${height}%"></span></div>`;
+      }).join('');
+    }
+
+    function renderTable(id, rows = [], heading) {
+      const target = document.getElementById(id);
+      if (!rows.length) { target.innerHTML = '<div class="empty">No data for this period.</div>'; return; }
+      target.innerHTML = `<table class="data-table"><thead><tr><th>${heading}</th><th>Count</th></tr></thead><tbody>${rows.map(row => `<tr><td>${escapeHtml(prettyLabel(row.label))}</td><td>${number(row.count)}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    async function loadExclusions() {
+      try {
+        const data = await analyticsRequest('exclusions');
+        document.getElementById('current-ip').textContent = data.currentIp || 'Unavailable';
+        renderExclusions(data.exclusions || []);
+      } catch (err) {
+        document.getElementById('ip-status').textContent = `Unable to load exclusions: ${err.message}`;
+      }
+    }
+
+    function renderExclusions(rows) {
+      const target = document.getElementById('exclusions');
+      if (!rows.length) { target.innerHTML = '<div class="empty">No IP addresses are currently excluded.</div>'; return; }
+      target.innerHTML = `<table class="data-table"><thead><tr><th>IP address</th><th>Label</th><th>Added</th><th></th></tr></thead><tbody>${rows.map(row => `<tr><td><code>${escapeHtml(row.ip_address)}</code></td><td>${escapeHtml(row.label || '-')}</td><td>${escapeHtml(new Date(row.created_at).toLocaleDateString('en-GB'))}</td><td><button class="btn-danger-small" onclick="removeExclusion('${row.id}')">Remove</button></td></tr>`).join('')}</tbody></table>`;
+    }
+
+    async function ignoreCurrentIp() {
+      await saveExclusion('exclude-current', { label: 'My IP address' });
+    }
+
+    async function addManualIp() {
+      const ip = document.getElementById('manual-ip').value.trim();
+      const label = document.getElementById('manual-label').value.trim();
+      if (!ip) return setIpStatus('Enter an IP address first.');
+      await saveExclusion('exclude-ip', { ip_address: ip, label });
+      document.getElementById('manual-ip').value = '';
+      document.getElementById('manual-label').value = '';
+    }
+
+    async function saveExclusion(action, body) {
+      setIpStatus('Saving exclusion...');
+      try {
+        await analyticsRequest(action, { method:'POST', body });
+        setIpStatus('IP address excluded. Future activity from it will not be recorded.');
+        await loadExclusions();
+      } catch (err) { setIpStatus(`Could not save exclusion: ${err.message}`); }
+    }
+
+    async function removeExclusion(id) {
+      if (!confirm('Start recording analytics from this IP address again?')) return;
+      setIpStatus('Removing exclusion...');
+      try {
+        await analyticsRequest('exclusion', { method:'DELETE', query:{ id } });
+        setIpStatus('Exclusion removed.');
+        await loadExclusions();
+      } catch (err) { setIpStatus(`Could not remove exclusion: ${err.message}`); }
+    }
+
+    function setIpStatus(message) { document.getElementById('ip-status').textContent = message; }
+    function number(value) { return Number(value || 0).toLocaleString('en-GB'); }
+    function formatDate(value) { return new Date(`${value}T12:00:00Z`).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+    function prettyLabel(value) { return String(value || 'Unknown').replace(/_/g,' ').replace(/\b\w/g, char => char.toUpperCase()); }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
+
+    checkSecurity();
+  </script>
+</body>
+</html>

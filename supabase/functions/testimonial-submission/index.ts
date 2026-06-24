@@ -36,6 +36,8 @@ Deno.serve(async (req) => {
       customer_name: payload.customer_name,
       customer_email: payload.customer_email,
       customer_phone: payload.customer_phone,
+      job_number: payload.job_number,
+      customer_address: payload.customer_address,
       rating: payload.rating,
       subject: payload.subject,
       content: payload.content,
@@ -64,6 +66,8 @@ function normalizePayload(body: Record<string, unknown>) {
   const customer_name = cleanText(body.customer_name, 120);
   const customer_email = cleanText(body.customer_email, 180);
   const customer_phone = cleanText(body.customer_phone, 60);
+  const job_number = cleanText(body.job_number, 80);
+  const customer_address = cleanText(body.customer_address, 300);
   const subject = cleanText(body.subject, 120);
   const content = cleanText(body.content, 1800);
   const rating = Math.max(1, Math.min(5, Number(body.rating) || 5));
@@ -71,9 +75,10 @@ function normalizePayload(body: Record<string, unknown>) {
 
   if (!customer_name) throw httpError('Customer name is required.', 400);
   if (!customer_email || !customer_email.includes('@')) throw httpError('A valid email is required.', 400);
+  if (!subject) throw httpError('Short title is required.', 400);
   if (!content) throw httpError('Testimonial content is required.', 400);
 
-  return { customer_name, customer_email, customer_phone, subject, content, rating, images };
+  return { customer_name, customer_email, customer_phone, job_number, customer_address, subject, content, rating, images };
 }
 
 async function uploadImages(db: ReturnType<typeof createClient>, images: SubmittedImage[]) {
@@ -121,6 +126,8 @@ async function queueTeamEmail(
     `Name: ${payload.customer_name}`,
     `Email: ${payload.customer_email}`,
     `Phone: ${payload.customer_phone || 'Not provided'}`,
+    `Job number: ${payload.job_number || 'Not provided'}`,
+    `Address: ${payload.customer_address || 'Not provided'}`,
     `Rating: ${payload.rating}/5`,
     `Subject: ${payload.subject || 'Not provided'}`,
     ``,
@@ -283,6 +290,8 @@ function buildTestimonialEmailHtml(options: {
                   ${detailRow('Customer', payload.customer_name)}
                   ${detailRow('Email', payload.customer_email)}
                   ${detailRow('Phone', payload.customer_phone || 'Not provided')}
+                  ${detailRow('Job number', payload.job_number || 'Not provided')}
+                  ${detailRow('Address', payload.customer_address || 'Not provided')}
                   ${detailRow('Rating', `${payload.rating}/5`)}
                   ${detailRow('Subject', payload.subject || 'Not provided')}
                 </table>

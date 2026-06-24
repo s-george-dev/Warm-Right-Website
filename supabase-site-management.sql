@@ -109,6 +109,8 @@ create table if not exists public.testimonial_submissions (
   customer_name text not null,
   customer_email text not null default '',
   customer_phone text not null default '',
+  job_number text not null default '',
+  customer_address text not null default '',
   review_date date not null default current_date,
   rating integer not null default 5 check (rating between 1 and 5),
   subject text not null default '',
@@ -117,6 +119,28 @@ create table if not exists public.testimonial_submissions (
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   admin_notes text not null default '',
   approved_testimonial_id uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.feedback_surveys (
+  id uuid primary key default gen_random_uuid(),
+  customer_name text not null,
+  customer_email text not null default '',
+  customer_phone text not null default '',
+  job_number text not null default '',
+  customer_address text not null default '',
+  engineer_name text not null default '',
+  insurer_agent_name text not null default '',
+  main_body_communication integer not null default 3 check (main_body_communication between 1 and 5),
+  main_body_experience integer not null default 3 check (main_body_experience between 1 and 5),
+  main_body_comments text not null default '',
+  engineer_communication integer not null default 3 check (engineer_communication between 1 and 5),
+  engineer_experience integer not null default 3 check (engineer_experience between 1 and 5),
+  engineer_comments text not null default '',
+  final_remarks text not null default '',
+  wants_contact boolean not null default false,
+  source text not null default 'direct',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -145,6 +169,7 @@ alter table public.site_content_cards enable row level security;
 alter table public.site_heroes enable row level security;
 alter table public.site_settings enable row level security;
 alter table public.testimonial_submissions enable row level security;
+alter table public.feedback_surveys enable row level security;
 alter table public.email_outbox enable row level security;
 
 drop policy if exists "Public can read page visibility" on public.site_pages;
@@ -245,6 +270,13 @@ to authenticated
 using (true)
 with check (true);
 
+drop policy if exists "Authenticated can manage feedback surveys" on public.feedback_surveys;
+create policy "Authenticated can manage feedback surveys"
+on public.feedback_surveys for all
+to authenticated
+using (true)
+with check (true);
+
 drop policy if exists "Authenticated can manage email outbox" on public.email_outbox;
 create policy "Authenticated can manage email outbox"
 on public.email_outbox for all
@@ -263,6 +295,12 @@ add column if not exists mobile_image_position_y integer not null default 50;
 
 alter table public.site_content_cards
 add column if not exists mobile_image_zoom integer not null default 115;
+
+alter table public.testimonial_submissions
+add column if not exists job_number text not null default '';
+
+alter table public.testimonial_submissions
+add column if not exists customer_address text not null default '';
 
 alter table public.site_heroes
 add column if not exists hero_key text not null default 'hero-1';
@@ -298,8 +336,9 @@ values
   ('schedule-of-rates', 'Our Rates', 'schedule-of-rates.html', 'main', 3, true),
   ('book-a-visit', 'Book A Visit', 'book-a-visit.html', 'main', 7, true),
   ('contact', 'Contact Us', 'contact.html', 'main', 8, true),
-  ('testimonals', 'Testimonials', 'testimonals.html', 'main', 6, true),
+  ('testimonials', 'Testimonials', 'testimonials.html', 'main', 6, true),
   ('testimonial-submit', 'Submit Testimonial', 'testimonial-submit.html', 'hidden', 0, true)
+  ,('feedback', 'Feedback Survey', 'feedback.html', 'hidden', 0, true)
 on conflict (page_key) do update
 set title = excluded.title,
     url = excluded.url,
@@ -364,7 +403,7 @@ values
   ('schedule-of-rates:card-1', 'schedule-of-rates', 'Our Rates', '', 'assets/images/professional.jpg', 50, 50, 115, 50, 50, 115, false, '', 'schedule-of-rates.html', 0, false),
   ('book-a-visit:card-1', 'book-a-visit', 'Book A Visit', 'Choose the option that suits you best - whether you would like to call us, book online, or request a callback.', 'assets/images/book-2.png', 50, 50, 115, 50, 50, 115, false, '', 'book-a-visit.html', 0, true),
   ('contact:card-1', 'contact', 'Contact Us', 'Choose the option that suits you best - whether you would like to call us, email, or send a message through our form.', 'assets/images/contact.jpg', 50, 50, 115, 50, 50, 115, false, '', 'contact.html', 0, true),
-  ('testimonals:card-1', 'testimonals', 'Testimonials', 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.', 'assets/images/testimonials.jpg', 50, 50, 115, 50, 50, 115, true, 'Send Us Your Testimonial', 'testimonial-submit.html', 0, true),
+  ('testimonials:card-1', 'testimonials', 'Testimonials', 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.', 'assets/images/testimonials.jpg', 50, 50, 115, 50, 50, 115, true, 'Send Us Your Testimonial', 'testimonial-submit.html', 0, true),
   ('testimonial-submit:card-1', 'testimonial-submit', 'Submit Testimonial', '', 'assets/images/testimonials.jpg', 50, 50, 115, 50, 50, 115, false, '', 'testimonial-submit.html', 0, false)
 on conflict (card_key) do nothing;
 
@@ -390,7 +429,7 @@ values
   ('schedule-of-rates', 'hero-1', 'Our Rates', 'Clear prices for common heating and plumbing visits.', 'assets/images/boiler-repair.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
   ('book-a-visit', 'hero-1', 'Book A Visit', 'Book a visit with one of our expert engineers through our online booking page.', 'assets/images/book-2.png', 50, 50, 100, 50, 50, 100, '', '', 0, true),
   ('contact', 'hero-1', 'Contact Us', 'Choose how you would like to contact the Warm Right team.', 'assets/images/contact.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
-  ('testimonals', 'hero-1', 'Customer Testimonials', 'See what our customers have to say about Warm Right.', 'assets/images/testimonials.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
+  ('testimonials', 'hero-1', 'Customer Testimonials', 'See what our customers have to say about Warm Right.', 'assets/images/testimonials.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true),
   ('testimonial-submit', 'hero-1', 'Send A Testimonial', 'Share your feedback and photos from your Warm Right visit.', 'assets/images/testimonials.jpg', 50, 50, 100, 50, 50, 100, '', '', 0, true)
 on conflict (page_key, hero_key) do nothing;
 

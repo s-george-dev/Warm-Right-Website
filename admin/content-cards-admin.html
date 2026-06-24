@@ -244,6 +244,8 @@
         <h2>Choose Image</h2>
         <div style="display:flex; gap:10px;">
           <input id="image-search" type="search" placeholder="Search images..." oninput="renderImageBrowser()">
+          <label class="btn-accent" for="image-browser-upload">Upload Image</label>
+          <input id="image-browser-upload" type="file" accept="image/*" hidden onchange="uploadImageFromBrowser(this.files[0])">
           <button class="btn-outline" onclick="closeImageBrowser()">Close</button>
         </div>
       </div>
@@ -276,7 +278,7 @@
       { key:'schedule-of-rates', title:'Our Rates', url:'../schedule-of-rates.html' },
       { key:'book-a-visit', title:'Book A Visit', url:'../book-a-visit.html' },
       { key:'contact', title:'Contact Us', url:'../contact.html' },
-      { key:'testimonals', title:'Testimonials', url:'../testimonals.html' },
+      { key:'testimonials', title:'Testimonials', url:'../testimonials.html' },
       { key:'testimonial-submit', title:'Submit Testimonial', url:'../testimonial-submit.html' }
     ];
     let currentSession = null;
@@ -530,7 +532,7 @@
         'schedule-of-rates': 'assets/images/boiler-repair.jpg',
         'book-a-visit': 'assets/images/book-2.png',
         contact: 'assets/images/contact.jpg',
-        testimonals: 'assets/images/testimonials.jpg',
+        testimonials: 'assets/images/testimonials.jpg',
         'testimonial-submit': 'assets/images/testimonials.jpg'
       };
       return images[pageKey] || (index % 2 ? 'assets/images/engineers.jpg' : 'assets/images/professional.jpg');
@@ -540,20 +542,20 @@
       const bodies = {
         'book-a-visit': 'Choose the option that suits you best - whether you would like to call us, book online, or request a callback.',
         contact: 'Choose the option that suits you best - whether you would like to call us, email, or send a message through our form.',
-        testimonals: 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.'
+        testimonials: 'Read feedback from Warm Right customers, or send us your own testimonial after a visit.'
       };
       return bodies[pageKey] || '';
     }
 
     function seedButtonForPage(pageKey) {
       const buttons = {
-        testimonals: { label: 'Send Us Your Testimonial', url: 'testimonial-submit.html' }
+        testimonials: { label: 'Send Us Your Testimonial', url: 'testimonial-submit.html' }
       };
       return buttons[pageKey] || { label: '', url: '' };
     }
 
     function seedCardIsActive(pageKey) {
-      return ['book-a-visit', 'contact', 'testimonals'].includes(pageKey);
+      return ['book-a-visit', 'contact', 'testimonials'].includes(pageKey);
     }
 
     function updatePreview() {
@@ -680,6 +682,37 @@
       closeImageBrowser();
       updatePreview();
     }
+    async function uploadImageFromBrowser(file) {
+      if (!file) return;
+      const input = document.getElementById('image-browser-upload');
+      const status = document.getElementById('image-status');
+      status.textContent = `Uploading ${file.name}...`;
+      try {
+        const data = await callImageFunction('upload', {
+          name: file.name,
+          contentBase64: await fileToBase64(file),
+          message: `Upload content card image ${file.name}`
+        }, 'POST');
+        const path = data.file?.path || `assets/images/${file.name}`;
+        document.getElementById('image_url').value = path;
+        await openImageBrowser();
+        closeImageBrowser();
+        updatePreview();
+        setStatus(`${file.name} uploaded and selected.`);
+      } catch (err) {
+        status.textContent = `Upload failed: ${err.message}`;
+      } finally {
+        input.value = '';
+      }
+    }
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
+        reader.onerror = () => reject(new Error('Could not read the selected image.'));
+        reader.readAsDataURL(file);
+      });
+    }
     function openCropPopover(mode, event) {
       event?.stopPropagation();
       const popover = document.getElementById(`${mode}-crop-popover`);
@@ -730,12 +763,24 @@
     function imageSrcForAdmin(path) {
       if (!path) return '../assets/images/no-image.jpg';
       if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      const githubUrl = githubImageUrl(path);
+      if (githubUrl) return githubUrl;
       return path.startsWith('../') ? path : `../${path.replace(/^\/+/, '')}`;
     }
     function imageUrlForCss(path) {
       if (!path) return '/assets/images/no-image.jpg';
       if (/^(https?:|data:|blob:)/i.test(path)) return path;
+      const githubUrl = githubImageUrl(path);
+      if (githubUrl) return githubUrl;
       return '/' + path.replace(/^(\.\/|\.\.\/|\/)+/, '');
+    }
+    function githubImageUrl(path) {
+      const cleanPath = String(path || '').replace(/^(\.\/|\.\.\/|\/)+/, '');
+      const file = imageFiles.find(item => (item.webPath || `assets/images/${item.name}`) === cleanPath);
+      if (file?.downloadUrl) return file.downloadUrl;
+      return cleanPath.startsWith('assets/images/')
+        ? `https://raw.githubusercontent.com/s-george-dev/Warm-Right-Website/master/${cleanPath.split('/').map(encodeURIComponent).join('/')}`
+        : '';
     }
     function setStatus(message) { document.getElementById('status').textContent = message; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
